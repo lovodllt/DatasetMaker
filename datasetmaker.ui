@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DatasetMaker</class>
+ <widget class="QMainWindow" name="DatasetMaker">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>827</width>
+    <height>547</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>DatasetMaker</string>
+  </property>
+  <widget class="QWidget" name="centralwidget"/>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>827</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="file">
+    <property name="title">
+     <string>文件</string>
+    </property>
+    <addaction name="separator"/>
+    <addaction name="openFile"/>
+   </widget>
+   <widget class="QMenu" name="mode">
+    <property name="title">
+     <string>模式</string>
+    </property>
+    <addaction name="separator"/>
+    <addaction name="cls"/>
+    <addaction name="separator"/>
+    <addaction name="detection"/>
+   </widget>
+   <addaction name="file"/>
+   <addaction name="mode"/>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <action name="openFile">
+   <property name="text">
+    <string>打开文件</string>
+   </property>
+  </action>
+  <action name="cls">
+   <property name="text">
+    <string>图像分类</string>
+   </property>
+  </action>
+  <action name="detection">
+   <property name="text">
+    <string>装甲板目标检测</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
