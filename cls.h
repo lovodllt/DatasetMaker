@@ -14,7 +14,6 @@ public:
     ~cls();
 
 private slots:
-    void on_one_clicked(bool checked);
 
 private:
     Ui::cls *ui;

@@ -1,5 +1,5 @@
-#ifndef LEFT_H
-#define LEFT_H
+#ifndef LEFTPART_H
+#define LEFTPART_H
 
 #include <QWidget>
 #include <QLabel>
@@ -15,16 +15,20 @@
 #include <QPixmap>
 #include <QPoint>
 #include <QScrollArea>
+#include <QDebug>
+#include <QScrollBar>
+#include <QDir>
+#include <QFileInfo>
 
-namespace Ui { class left; }
+namespace Ui { class leftPart; }
 
-class left : public QWidget
+class leftPart : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit left(QWidget *parent = nullptr);
-    ~left();
+    explicit leftPart(QWidget *parent = nullptr);
+    ~leftPart();
 
     void displayImage(const QString &imagePath);
     void populateImageList(const QFileInfoList &imageFiles, QMap<QString, bool> &is_images_processed);
@@ -35,15 +39,21 @@ signals:
 private slots:
     void on_openDir_clicked();
     void on_nextImage_clicked();
-    void on_prev_Image_clicked();
+    void on_prevImage_clicked();
+    void on_createLabel_clicked();
+    void on_save_clicked();
+    void on_deleteFile_clicked();
+
     void on_imageListWidget_itemClicked(QListWidgetItem *item);
-    void onWindowResized(const QSize &size);
 
 protected:
     void wheelEvent(QWheelEvent *event) override;
+    void resizeEvent(QResizeEvent *evrnt) override;
 
 private:
-    Ui::left *ui;
+    void updateImageDisplay();
+
+    Ui::leftPart *ui;
 
     QScrollArea *scrollArea;                   // 滚动区域
     QLabel *imageLabel;                        // 图像显示
@@ -52,9 +62,9 @@ private:
     QMap<QString, bool> is_images_processed;
     QPixmap currentPixmap;                     // 存储当前显示的图像
     double scaleFactor = 1.0;                  // 缩放因子
-    QPointF scrollOffset;                      // 滚动偏移量
     QSize originalImageSize;                   // 原始图像尺寸
-    QSize lastDisplaySize;                     // 上一时刻的尺寸
     bool isZoomed = false;                     // 是否进行了缩放
+
 };
-#endif // LEFT_H
+
+#endif // LEFTPART_H

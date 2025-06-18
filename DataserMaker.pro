@@ -18,7 +18,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     cls.cpp \
     detection.cpp \
-    left.cpp \
+    leftPart.cpp \
     main.cpp \
     datasetmaker.cpp
 
@@ -26,13 +26,13 @@ HEADERS += \
     cls.h \
     datasetmaker.h \
     detection.h \
-    left.h
+    leftPart.h
 
 FORMS += \
     datasetmaker.ui \
     cls.ui \
     detection.ui \
-    left.ui
+    leftPart.ui
 
 TRANSLATIONS += \
     DataserMaker_zh_CN.ts

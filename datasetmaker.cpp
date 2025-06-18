@@ -13,8 +13,6 @@ DatasetMaker::DatasetMaker(QWidget *parent)
 
     // 创建上方固定组件
     QWidget *topWidget = new QWidget(this);
-    QVBoxLayout *topLayout = new QVBoxLayout(topWidget);
-
     splitter->addWidget(topWidget);
 
     // 创建水平分割器用于左边和右边
@@ -22,9 +20,9 @@ DatasetMaker::DatasetMaker(QWidget *parent)
     splitter->addWidget(horizontalSplitter);
 
     // 将leftWidget加入左方组件并连接信号
-    leftWidget = new left(this);
+    leftWidget = new leftPart(this);
     horizontalSplitter->addWidget(leftWidget);
-    connect(leftWidget, &left::buttonClicked, this, &DatasetMaker::handleLeftButton);
+    connect(leftWidget, &leftPart::buttonClicked, this, &DatasetMaker::handleLeftButton);
 
     // 创建占位Widget
     placeholderWidget = new QWidget(this);
@@ -43,7 +41,7 @@ DatasetMaker::DatasetMaker(QWidget *parent)
     clsWidget->hide();
     detectionWidget->hide();
 
-    splitter->setSizes({50, 600});
+    splitter->setSizes({10, 600});
     horizontalSplitter->setSizes({400, 200});
 
     // 分割线

@@ -13,7 +13,7 @@
 
 #include "cls.h"
 #include "detection.h"
-#include "left.h"
+#include "leftPart.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class DatasetMaker; }
@@ -48,8 +48,9 @@ private:
 
     cls *clsWidget;
     detection *detectionWidget;
-    left *leftWidget;
+    leftPart *leftWidget;
 };
+
 #endif // DATASETMAKER_H
 
 

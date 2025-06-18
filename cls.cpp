@@ -12,8 +12,3 @@ cls::~cls()
 {
     delete ui;
 }
-
-void cls::on_one_clicked(bool checked)
-{
-
-}
