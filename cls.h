@@ -2,6 +2,8 @@
 #define CLS_H
 
 #include <QWidget>
+#include <QAbstractButton>
+#include <QDebug>
 
 namespace Ui { class cls; }
 
@@ -14,9 +16,12 @@ public:
     ~cls();
 
 private slots:
+    void onClassSelected(QAbstractButton *button);
+    void on_sure_clicked();
 
 private:
     Ui::cls *ui;
+    //QButtonGroup *classButtonGroup;
 };
 
 #endif // CLS_H

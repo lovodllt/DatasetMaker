@@ -2,14 +2,9 @@
 #define DATASETMAKER_H
 
 #include <QMainWindow>
-#include <QSplitter>
-#include <QLabel>
-#include <QVBoxLayout>
+#include <QMap>
 #include <QString>
-#include <QStatusBar>
-#include <QAction>
-#include <QFileDialog>
-#include <QApplication>
+#include <QSettings>
 
 #include "cls.h"
 #include "detection.h"
@@ -29,26 +24,19 @@ public:
 
 private slots:
     void on_openFile_triggered();
-    void on_cls_triggered();
-    void on_detection_triggered();
+    void on_yolo_triggered();
+    void on_exit_triggered();
+    void on_clsMode_triggered();
+    void on_detectionMode_triggered();
+    void statusMessageUpdate(const QString &message);
 
 private:
-    void selectAndProcessDirectory();
-    void processDirectory(const QString& dirPath);
-    void changeWidget(int targetIndex, QWidget *newWidget);
-    void handleLeftButton(int index);
-
     Ui::DatasetMaker *ui;
-    QSplitter *splitter;                       // 上下分割器
-    QSplitter *horizontalSplitter;             // 左右分割器
-    QWidget *placeholderWidget;                // 占位Widget
 
-    QFileInfoList imageFiles;                  // 存储图片信息
-    QMap<QString, bool> is_images_processed;
+    leftPart *leftWidget() const;
+    cls *clsWidget() const;
+    detection *detectionWidget() const;
 
-    cls *clsWidget;
-    detection *detectionWidget;
-    leftPart *leftWidget;
 };
 
 #endif // DATASETMAKER_H
