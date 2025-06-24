@@ -64,11 +64,11 @@ protected:
     void keyPressEvent(QKeyEvent *event) override;
 
 private:
-    void updateImageDisplay();
+    void updateImageDisplay(double customScale = -1);
     void setCurrentImage(int index);
     QPoint convertToImageCoordinates(const QPoint &pos);
-    QRect scaleRect(const QRect &rect);
     void cancelDrawing();
+    QRect calculateRect(const QPoint &start, const QPoint &end);
 
     Ui::leftPart *ui;
 
@@ -78,15 +78,12 @@ private:
     QFileInfoList imageFiles;                  // 存储图片信息
     QMap<QString, bool> is_images_processed;   // 是否处理了图像
     QPixmap currentPixmap;                     // 存储当前显示的图像
-    double scaleFactor = 1.0;                  // 缩放因子
     QSize originalImageSize;                   // 原始图像尺寸
-    bool isZoomed = false;                     // 是否进行了缩放
     int currentIndex = -1;                     // 当前显示的图片索引
 
     bool is_labeling = false;                  // 是否处于标签模式
     QPoint firstPoint;                         // 矩形的第一个点
     QPoint currentPoint;                       // 鼠标当前指向的点
-    QVector<QRect> labels;                     // 标签容器
     bool isDrawingRect = false;                // 是否正在绘制矩形
 };
 

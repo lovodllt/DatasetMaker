@@ -232,7 +232,7 @@ QSplitter::handle {
              <property name="geometry">
               <rect>
                <x>30</x>
-               <y>30</y>
+               <y>60</y>
                <width>71</width>
                <height>21</height>
               </rect>
@@ -245,7 +245,7 @@ QSplitter::handle {
              <property name="geometry">
               <rect>
                <x>100</x>
-               <y>30</y>
+               <y>60</y>
                <width>113</width>
                <height>25</height>
               </rect>
@@ -258,7 +258,7 @@ QSplitter::handle {
              <property name="geometry">
               <rect>
                <x>30</x>
-               <y>70</y>
+               <y>100</y>
                <width>71</width>
                <height>21</height>
               </rect>
@@ -271,7 +271,7 @@ QSplitter::handle {
              <property name="geometry">
               <rect>
                <x>100</x>
-               <y>70</y>
+               <y>100</y>
                <width>113</width>
                <height>25</height>
               </rect>
@@ -284,7 +284,7 @@ QSplitter::handle {
              <property name="geometry">
               <rect>
                <x>30</x>
-               <y>130</y>
+               <y>160</y>
                <width>101</width>
                <height>31</height>
               </rect>
@@ -305,6 +305,19 @@ QPushButton:pressed {
              </property>
              <property name="text">
               <string>确定</string>
+             </property>
+            </widget>
+            <widget class="QCheckBox" name="checkBox">
+             <property name="geometry">
+              <rect>
+               <x>10</x>
+               <y>10</y>
+               <width>411</width>
+               <height>26</height>
+              </rect>
+             </property>
+             <property name="text">
+              <string>自定义尺寸</string>
              </property>
             </widget>
            </widget>

@@ -19,9 +19,15 @@ void ImageLabel::setPreviewRect(const QRect &rect)
     update();
 }
 
-void ImageLabel::setLabels(const QVector<QRect> newLabels)
+void ImageLabel::setLabels(const QVector<QRect> &newLabels)
 {
-    labels = newLabels;
+    originalLabels = newLabels;
+    update();
+}
+
+void ImageLabel::setLabelsScaleFactor(double scale)
+{
+    currentScaleFactor = scale;
     update();
 }
 
@@ -51,26 +57,23 @@ void ImageLabel::paintEvent(QPaintEvent *event)
     if (pixmap() && !pixmap()->isNull())
     {
         QPainter painter(this);
-        painter.setRenderHint(QPainter::Antialiasing);    // 抗锯齿
+        painter.setRenderHint(QPainter::Antialiasing);
 
-        QSize pixmapSize = pixmap()->size();
-
-        double scaleX = static_cast<double>(pixmapSize.width()) / originalImageSize.width();
-        double scaleY = static_cast<double>(pixmapSize.height()) / originalImageSize.height();
+        double scaleFactor = currentScaleFactor;
 
         // 绘制现有标签
-        if (!labels.isEmpty())
+        if (!originalLabels.isEmpty())
         {
             QPen pen(Qt::green, 2);
             painter.setPen(pen);
 
-            for (const QRect &rect : labels)
+            for (const QRect &rect : originalLabels)
             {
                 QRect displayRect(
-                    static_cast<int>(rect.x() * scaleX),
-                    static_cast<int>(rect.y() * scaleY),
-                    static_cast<int>(rect.width() * scaleX),
-                    static_cast<int>(rect.height() * scaleY)
+                    static_cast<int>(rect.x() * scaleFactor),
+                    static_cast<int>(rect.y() * scaleFactor),
+                    static_cast<int>(rect.width() * scaleFactor),
+                    static_cast<int>(rect.height() * scaleFactor)
                 );
 
                 painter.drawRect(displayRect);
@@ -81,13 +84,9 @@ void ImageLabel::paintEvent(QPaintEvent *event)
         if (!firstPoint.isNull())
         {
             QPoint displayPoint(
-                static_cast<int>(firstPoint.x() * scaleX),
-                static_cast<int>(firstPoint.y() * scaleY)
+                static_cast<int>(firstPoint.x() * scaleFactor),
+                static_cast<int>(firstPoint.y() * scaleFactor)
             );
-
-            // 确保点在可见区域内
-            displayPoint.setX(qBound(0, displayPoint.x(), pixmapSize.width() - 1));
-            displayPoint.setY(qBound(0, displayPoint.y(), pixmapSize.height() - 1));
 
             painter.setBrush(Qt::green);
             painter.setPen(Qt::NoPen);
@@ -99,10 +98,10 @@ void ImageLabel::paintEvent(QPaintEvent *event)
         if (previewRect.isValid())
         {
             QRect displayRect(
-                   static_cast<int>(previewRect.x() * scaleX),
-                   static_cast<int>(previewRect.y() * scaleY),
-                   static_cast<int>(previewRect.width() * scaleX),
-                   static_cast<int>(previewRect.height() * scaleY)
+                   static_cast<int>(previewRect.x() * scaleFactor),
+                   static_cast<int>(previewRect.y() * scaleFactor),
+                   static_cast<int>(previewRect.width() * scaleFactor),
+                   static_cast<int>(previewRect.height() * scaleFactor)
             );
 
             // 根据绘制状态选择不同样式

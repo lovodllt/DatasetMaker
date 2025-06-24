@@ -182,10 +182,11 @@ void leftPart::displayImage(const QString &imagePath)
     originalImageSize = currentPixmap.size();
 
     imageLabel->setOriginalImageSize(originalImageSize);
-    imageLabel->setLabels(labels);
     imageLabel->setPixmap(currentPixmap);
 
+    // 重置显示比例
     updateImageDisplay();
+    imageLabel->setLabels(QVector<QRect>());
 }
 
 // 创建图像文件条目
@@ -240,21 +241,25 @@ void leftPart::setCurrentImage(int index)
 }
 
 // 滚轮操作处更新图像显示
-void leftPart::updateImageDisplay()
+void leftPart::updateImageDisplay(double customScale)
 {
     if (currentPixmap.isNull()) return;
 
     // 计算可用区域
     QSize viewportSize = imageArea->viewport()->size();
-    int scrollBarWidth = imageArea->verticalScrollBar()->sizeHint().width();
-    int scrollBarHeight = imageArea->horizontalScrollBar()->sizeHint().height();
+    int scrollBarWidth = imageArea->verticalScrollBar()->isVisible() ? imageArea->verticalScrollBar()->width() : 0;
+    int scrollBarHeight = imageArea->horizontalScrollBar()->isVisible() ? imageArea->horizontalScrollBar()->height() : 0;
+
     QSize availableSize(viewportSize.width() - scrollBarWidth, viewportSize.height() - scrollBarHeight);
 
     // 计算缩放比例
-    double ratio = qMin(static_cast<double>(availableSize.width() / originalImageSize.width()),
-                        static_cast<double>(availableSize.height() / originalImageSize.height()));
+    double ratio = qMin(static_cast<double>(availableSize.width()) / originalImageSize.width(),
+                        static_cast<double>(availableSize.height()) / originalImageSize.height());
 
-    QSize scaledSize = isZoomed ? originalImageSize * scaleFactor : originalImageSize * ratio;
+    double scale = (customScale > 0) ? customScale : ratio;
+    QSize scaledSize = originalImageSize * scale;
+
+    imageLabel->setLabelsScaleFactor(scale);
 
     // 创建缩放图像
     QPixmap scaledPixmap = currentPixmap.scaled(
@@ -277,63 +282,23 @@ void leftPart::wheelEvent(QWheelEvent *event)
         return;
     }
 
-    // 获取当前鼠标位置(相对于scrollArea)
-    QPointF currentPos = event->pos();
-    QPointF imageAreaPos = imageArea->mapFromParent(currentPos.toPoint());
+    // 计算当前缩放比例
+    double currentScale = static_cast<double>(imageLabel->width()) / originalImageSize.width();
 
-    if (!imageArea->rect().contains(currentPos.toPoint()))
+    // ctrl + 鼠标滚轮    缩放
+    if (event->modifiers() & Qt::ControlModifier)
     {
-        event->ignore();
-        return;
-    }
-
-    // 计算鼠标在原始图像上的相对位置
-    double imageX = (imageAreaPos.x() + imageArea->horizontalScrollBar()->value() - (imageArea->width() - imageLabel->width()) / 2) / scaleFactor;
-    double imageY = (imageAreaPos.y() + imageArea->verticalScrollBar()->value() - (imageArea->height() - imageLabel->height()) / 2) / scaleFactor;
-    imageX = qBound(0.0, imageX, static_cast<double>(originalImageSize.width()));
-    imageY = qBound(0.0, imageY, static_cast<double>(originalImageSize.height()));
-
-     // ctrl + 鼠标滚轮    缩放
-     if (event->modifiers() & Qt::ControlModifier)
-     {
-         // 针对初次缩放计算当前窗口的缩放比例
-         if (!isZoomed)
-         {
-             double widthRatio = static_cast<double>(imageLabel->width()) / originalImageSize.width();
-             double heightRatio = static_cast<double>(imageLabel->height()) / originalImageSize.height();
-             scaleFactor = qMin(widthRatio, heightRatio);
-             isZoomed = true;
-         }
-
         const double scaleStep = 0.1;
-        double oldScale = scaleFactor;
-
-        // 计算缩放因子
         double angle = event->angleDelta().y();
+
         if (angle != 0)
         {
             double factor = (angle > 0) ? (1.0 + scaleStep) : (1.0 / (1.0 + scaleStep));
-            double newScale = oldScale * factor;
-            newScale = qMax(0.5, qMin(newScale, 10.0));
+            double newScale = qMax(0.5, qMin(currentScale * factor, 10.0));
 
-            // 新的鼠标位置
-            double newImageX = imageX * newScale;
-            double newImageY = imageY * newScale;
-
-            // 新的滚动条位置
-            double newScrollX = newImageX - currentPos.x() + (imageArea->width() - imageLabel->width()) / 2;
-            double newScrollY = newImageY - currentPos.y() + (imageArea->height() - imageLabel->height()) / 2;
-
-            // 设置滚动条位置
-            imageArea->horizontalScrollBar()->setValue(newScrollX);
-            imageArea->verticalScrollBar()->setValue(newScrollY);
-
-            scaleFactor = newScale;
-            isZoomed = true;
-
-            updateImageDisplay();
-        }
-        event->accept();
+            updateImageDisplay(newScale);
+            event->accept();
+        } 
     }
     // alt + 鼠标滚轮    左右移动
     else if (event->modifiers() & Qt::AltModifier)
@@ -347,7 +312,7 @@ void leftPart::wheelEvent(QWheelEvent *event)
              // 限制滚动条在有效范围内
              QScrollBar *xScroll = imageArea->horizontalScrollBar();
              int newValue = xScroll->value() + dx;
-             newValue = qMax(xScroll->minimum(), qMin(newValue, xScroll->maximum()));
+             newValue = qBound(xScroll->minimum(), newValue, xScroll->maximum());
              imageArea->horizontalScrollBar()->setValue(newValue);
          }
          event->accept();
@@ -375,83 +340,66 @@ void leftPart::mousePressEvent(QMouseEvent *event)
 {
     if (is_labeling && !currentPixmap.isNull() && event->button() == Qt::LeftButton)
     {
-        QPoint imgPos = convertToImageCoordinates(event->pos());
-        if (imgPos.isNull()) return;
-
-        if (firstPoint.isNull())
-        {
-            firstPoint = imgPos;
-            imageLabel->setFirstPoint(firstPoint);
-            isDrawingRect = true;
-            imageLabel->setDrawingState(true);
-            emit statusMessageUpdate("标签模式: 点击图像设置终点");
-        }
+        firstPoint = convertToImageCoordinates(event->pos());
+        imageLabel->setFirstPoint(firstPoint);
+        isDrawingRect = true;
+        emit statusMessageUpdate("标签模式: 点击图像设置终点");
     }
-    else
-    {
-        // 其他事件仍由父类处理
-        QWidget::mousePressEvent(event);
-    }
-}
 
-// 重写鼠标释放事件
-void leftPart::mouseReleaseEvent(QMouseEvent *event)
-{
-    if (is_labeling && isDrawingRect && event->button() == Qt::LeftButton && !firstPoint.isNull() && !currentPixmap.isNull())
-    {
-        QPoint imgPos = convertToImageCoordinates(event->pos());
-        if (!imgPos.isNull())
-        {
-            QRect rect(firstPoint, imgPos);
-            rect = rect.normalized();
-
-            if (rect.width() > 0 && rect.height() > 0)
-            {
-                labels.push_back(rect);
-                emit statusMessageUpdate("标签添加成功");
-                imageLabel->setLabels(labels);
-            }
-            else
-            {
-                emit statusMessageUpdate("标签添加失败：高度或宽度为0");
-            }
-
-            isDrawingRect = false;
-            imageLabel->setDrawingState(false);
-            firstPoint = QPoint();
-            imageLabel->clearFirstPoint();
-            imageLabel->clearPreview();
-
-            if (is_labeling)
-            {
-                emit statusMessageUpdate("标签模式: 点击图像设置起点 (ESC取消)");
-            }
-        }
-    }
-    else
-    {
-         QWidget::mouseReleaseEvent(event);
-    }
+    // 其他事件仍由父类处理
+    QWidget::mousePressEvent(event);
 }
 
 // 重写鼠标移动事件
 void leftPart::mouseMoveEvent(QMouseEvent *event)
 {
-    if (is_labeling && isDrawingRect && !firstPoint.isNull() && !currentPixmap.isNull())
+    if (is_labeling && isDrawingRect)
     {
         currentPoint = convertToImageCoordinates(event->pos());
+        QRect previewRect = calculateRect(firstPoint, currentPoint);
+        imageLabel->setPreviewRect(previewRect);
+        imageLabel->setDrawingState(true);
+    }
+    QWidget::mouseMoveEvent(event);
+}
 
-        if (!currentPoint.isNull())
+// 重写鼠标释放事件
+void leftPart::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (is_labeling && isDrawingRect && event->button() == Qt::LeftButton)
+    {
+        currentPoint = convertToImageCoordinates(event->pos());
+        QRect rect = calculateRect(firstPoint, currentPoint);
+
+        if (rect.isValid())
         {
-            QRect previewRect(firstPoint, currentPoint);
-            previewRect = previewRect.normalized();
-            imageLabel->setPreviewRect(previewRect);
+            QVector<QRect> currentLabels = imageLabel->getOriginalLabels();
+            currentLabels.append(rect);
+            imageLabel->setLabels(currentLabels);
+            emit statusMessageUpdate("标签添加成功");
+        }
+
+        isDrawingRect = false;
+        imageLabel->clearFirstPoint();
+        imageLabel->clearPreview();
+
+        if (is_labeling)
+        {
+            emit statusMessageUpdate("标签模式: 点击图像设置起点 (ESC取消)");
         }
     }
-    else
-    {
-        QWidget::mouseMoveEvent(event);
-    }
+
+    QWidget::mouseReleaseEvent(event);
+}
+
+// 计算矩形
+QRect leftPart::calculateRect(const QPoint &start, const QPoint &end)
+{
+    int x = qMin(start.x(), end.x());
+    int y = qMin(start.y(), end.y());
+    int width = qAbs(start.x() - end.x());
+    int height = qAbs(start.y() - end.y());
+    return QRect(x, y, width, height);
 }
 
 // 取消绘制
@@ -488,61 +436,21 @@ void leftPart::keyPressEvent(QKeyEvent *event)
 // 将窗口坐标转换为图像坐标
 QPoint leftPart::convertToImageCoordinates(const QPoint &pos)
 {
-    QPoint viewportPos = imageArea->mapFrom(this, pos);
+    QPoint imageAreaPos = imageArea->viewport()->mapFrom(this, pos);
 
-    // 滚动条的偏移
-    int xInLabel = viewportPos.x() + imageArea->horizontalScrollBar()->value();
-    int yInLabel = viewportPos.y() + imageArea->verticalScrollBar()->value();
+    // 使用当前缩放因子
+    double scale = imageLabel->getCurrentScaleFactor();
 
-    const QPixmap* pixmap = imageLabel->pixmap();
-    if (!pixmap || pixmap->isNull())
-        return QPoint();
-
-    QSize pixmapSize = pixmap->size();
-    QSize labelSize = imageLabel->size();
-
-    // 计算图像在标签中的偏移（居中显示）
-    int xOffset = (labelSize.width() - pixmapSize.width()) / 2;
-    int yOffset = (labelSize.height() - pixmapSize.height()) / 2;
-
-    int imgX = xInLabel - xOffset;
-    int imgY = yInLabel - yOffset;
-
-    imgX = qBound(0, imgX, pixmapSize.width() - 1);
-    imgY = qBound(0, imgY, pixmapSize.height() - 1);
+    // 获取当前滚动条位置
+    int scrollX = imageArea->horizontalScrollBar()->value();
+    int scrollY = imageArea->verticalScrollBar()->value();
 
     // 转换为原始图像坐标
-    double scaleX = static_cast<double>(originalImageSize.width()) / pixmapSize.width();
-    double scaleY = static_cast<double>(originalImageSize.height()) / pixmapSize.height();
+    double imageX = (imageAreaPos.x() + scrollX) / scale;
+    double imageY = (imageAreaPos.y() + scrollY) / scale;
 
-    return QPoint(
-        static_cast<int>(imgX * scaleX),
-        static_cast<int>(imgY * scaleY)
-    );
+    imageX = qBound(0.0, imageX, static_cast<double>(originalImageSize.width() - 1));
+    imageY = qBound(0.0, imageY, static_cast<double>(originalImageSize.height() - 1));
+
+    return QPoint(static_cast<int>(imageX), static_cast<int>(imageY));
 }
-
-// 缩放矩形到当前显示尺寸
-QRect leftPart::scaleRect(const QRect &rect)
-{
-    // 获取图像标签中的图像
-    const QPixmap* pixmap = imageLabel->pixmap();
-    if (!pixmap || pixmap->isNull())
-    {
-        return QRect();
-    }
-
-    QSize pixmapSize = pixmap->size();
-
-    // 计算缩放比例
-    double scaleX = static_cast<double>(pixmapSize.width()) / originalImageSize.width();
-    double scaleY = static_cast<double>(pixmapSize.height()) / originalImageSize.height();
-
-    // 缩放矩形
-    return QRect(
-        static_cast<int>(rect.x() * scaleX),
-        static_cast<int>(rect.y() * scaleY),
-        static_cast<int>(rect.width() * scaleX),
-        static_cast<int>(rect.height() * scaleY)
-    );
-}
-
