@@ -18,6 +18,7 @@ public:
     void drawDetection(cv::Mat &img);
     void drawLabels();
     void clearLabels();
+    bool selectLabel(const cv::Point &point, const detectionLabel &label);
 
 signals:
     void statusMessageUpdate(const QString &message);
@@ -42,6 +43,7 @@ public:
     cv::Mat preview;
     double currentScale;
     detectionLabel tmpLabel;
+    bool labelSelected = false;
 };
 
 #endif // LABELPAINTER_H

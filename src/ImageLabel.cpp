@@ -1,4 +1,5 @@
 #include "ImageLabel.h"
+#include "ImageLabel.h"
 #include "leftPart.h"
 
 ImageLabel::ImageLabel(QWidget *parent) : QLabel(parent)
@@ -25,7 +26,10 @@ void ImageLabel::drawDetection(cv::Mat &img)
     {
         for (const auto &label : detectionLabels_)
         {
-            rectangle(img, label.rect, cv::Scalar(255, 0, 0), 1, cv::LINE_AA);
+            cv::Scalar color = label.is_selected ? cv::Scalar(255, 0, 0) : cv::Scalar(0, 0, 255);
+            int thickness = label.is_selected? 2 : 1;
+
+            rectangle(img, label.rect, color, thickness, cv::LINE_AA);
             putText(img, label.name, label.rect.tl(), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 0, 0), 0.3, cv::LINE_AA);
 
             if (labelMode_ == "cls" && label.is_selected)
@@ -92,6 +96,11 @@ void ImageLabel::drawLabels()
     update();
 }
 
+bool ImageLabel::selectLabel(const cv::Point &point, const detectionLabel &label)
+{
+    return label.rect.contains(point);
+}
+
 // 点击事件
 void ImageLabel::mousePressEvent(QMouseEvent *event)
 {
@@ -99,17 +108,49 @@ void ImageLabel::mousePressEvent(QMouseEvent *event)
     {
         QString message = tr("标签模式: 请先选择标签模式");
         emit statusMessageUpdate(message);
+        return;
     }
-    else if (event->button() == Qt::LeftButton && is_labeling_ && firstPoint == cv::Point(0, 0) && tmpLabel.rect.empty())
+
+    if (!is_labeling_)
+        return;
+
+    // 获取鼠标相对于视图的位置
+    QPoint viewportMousePos = event->pos();
+
+    // 计算原始图像坐标
+    int originalX = static_cast<int>(viewportMousePos.x() / currentScale);
+    int originalY = static_cast<int>(viewportMousePos.y() / currentScale);
+    cv::Point clickPoint = cv::Point(originalX, originalY);
+
+    for (auto &label : detectionLabels_)
     {
-        // 获取鼠标相对于视图的位置
-        QPoint viewportMousePos = event->pos();
+        if (selectLabel(clickPoint, label))
+        {
+            firstPoint = cv::Point(0, 0);
+            is_drawing = false;
 
-        // 计算原始图像坐标
-        int originalX = static_cast<int>(viewportMousePos.x() / currentScale);
-        int originalY = static_cast<int>(viewportMousePos.y() / currentScale);
-        firstPoint = cv::Point(originalX, originalY);
+            for (auto &otherLabel : detectionLabels_)
+            {
+                otherLabel.is_selected = false;
+            }
 
+            label.is_selected = true;
+            labelSelected = true;
+
+            QString message = tr("标签模式: 选中标签 '%1'").arg(QString::fromStdString(label.name));
+            emit statusMessageUpdate(message);
+            break;
+        }
+    }
+
+    if (labelSelected)
+    {
+        drawLabels();
+    }
+
+    if (event->button() == Qt::LeftButton && firstPoint == cv::Point(0, 0) && tmpLabel.rect.empty())
+    {
+        firstPoint = clickPoint;
         is_drawing = true;
 
         QString message = tr("标签模式: 松开鼠标确定标签");
@@ -176,6 +217,21 @@ void ImageLabel::keyPressEvent(QKeyEvent *event)
         clearLabels();
         drawLabels();
     }
+    else if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace && labelSelected)
+    {
+        for (auto it = detectionLabels_.begin(); it != detectionLabels_.end();)
+        {
+            if (it->is_selected)
+            {
+                it = detectionLabels_.erase(it);
+                drawLabels();
+            }
+            else
+            {
+                ++it;
+            }
+        }
+    }
     else
     {
         QLabel::keyPressEvent(event);
@@ -188,5 +244,9 @@ void ImageLabel::clearLabels()
     firstPoint = cv::Point(0, 0);
     currentPoint = cv::Point(0, 0);
     tmpLabel = detectionLabel();
-    detectionLabels_.clear();
+
+    for (auto &label : detectionLabels_)
+    {
+        label.is_selected = false;
+    }
 }

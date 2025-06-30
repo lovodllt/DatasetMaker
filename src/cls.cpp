@@ -16,6 +16,7 @@ cls::cls(QWidget *parent) :
 
     connect(classButtonGroup, QOverload<QAbstractButton *>::of(&QButtonGroup::buttonClicked), this, &cls::onClassSelected);
     connect(ui->autoCut, &QRadioButton::toggled, [this](bool checked) {
+        is_autoCut_ = true;
         ui->widthEdit->setEnabled(checked);
         ui->heightEdit->setEnabled(checked);
     });
@@ -57,7 +58,6 @@ void cls::on_sure_clicked()
     {
         emit statusMessageUpdate("自动裁剪未启用");
     }
-
 }
 
 // 保存标签
@@ -72,21 +72,42 @@ void cls::on_saveLabel_clicked()
     detectionLabel label;
     detectionLabel &tmpLabel = leftPartInstance->imageLabel->tmpLabel;
 
-    if (!tmpLabel.rect.empty())
+    if (is_autoCut_ && width == 0 || height == 0)
     {
-        // 记录保存部分
-        label.name = clsname;
-        label.rect = tmpLabel.rect;
-        label.is_selected = true;
-
-        detectionLabels_.push_back(label);
-        tmpLabel = detectionLabel();
-
-        leftPartInstance->imageLabel->drawLabels();
-
-        QString message = tr("标签模式: 标签创建成功");
-        emit statusMessageUpdate("标签创建成功");
+        emit statusMessageUpdate("保存错误: 未设置裁剪大小");
+        return;
     }
+
+    if (clsname.empty())
+    {
+        emit statusMessageUpdate("保存错误: 未选择类别");
+        return;
+    }
+
+    if (tmpLabel.rect.empty())
+    {
+        emit statusMessageUpdate("保存错误: 未创建标签");
+        return;
+    }
+
+    // 清除选中标签
+    for (auto &label : detectionLabels_)
+    {
+        label.is_selected = false;
+    }
+
+    // 记录保存部分
+    label.name = clsname;
+    label.rect = tmpLabel.rect;
+    label.is_selected = true;
+
+    detectionLabels_.push_back(label);
+    tmpLabel = detectionLabel();
+
+    leftPartInstance->imageLabel->drawLabels();
+
+    QString message = tr("标签模式: 标签创建成功");
+    emit statusMessageUpdate("标签创建成功");
 }
 
 // 展示预览图

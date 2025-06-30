@@ -37,8 +37,8 @@ private:
 
 public:
     std::string clsname;
-    int width;
-    int height;
+    int width{};
+    int height{};
 };
 
 #endif // CLS_H
