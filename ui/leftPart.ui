@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1000</width>
+    <width>1001</width>
     <height>700</height>
    </rect>
   </property>
@@ -331,10 +331,6 @@ QPushButton:hover {
 }
 QPushButton:pressed {
     background: #d0d0d0;
-}
-QPushButton:checked {
-    background: #d0e0ff;
-    border: 1px solid #c0c0c0;
 }</string>
               </property>
               <property name="text">
@@ -343,6 +339,9 @@ QPushButton:checked {
               </property>
               <property name="shortcut">
                <string>Ctrl+L</string>
+              </property>
+              <property name="checkable">
+               <bool>false</bool>
               </property>
               <property name="flat">
                <bool>true</bool>
@@ -530,7 +529,7 @@ QListWidget::item:hover {
        </sizepolicy>
       </property>
       <property name="widgetResizable">
-       <bool>true</bool>
+       <bool>false</bool>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -538,38 +537,37 @@ QListWidget::item:hover {
       <widget class="QWidget" name="scrollAreaWidgetContents">
        <property name="geometry">
         <rect>
-         <x>0</x>
+         <x>188</x>
          <y>0</y>
-         <width>556</width>
+         <width>68</width>
          <height>698</height>
         </rect>
        </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <layout class="QHBoxLayout" name="imageLayout">
-        <item>
-         <widget class="QLabel" name="imageLabel">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">QLabel {
-    color: #808080;
-    font-size: 18px;
-}</string>
-          </property>
-          <property name="text">
-           <string>请选择图片</string>
-          </property>
-          <property name="scaledContents">
-           <bool>true</bool>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
-        </item>
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="sizeConstraint">
+         <enum>QLayout::SetDefaultConstraint</enum>
+        </property>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
        </layout>
       </widget>
      </widget>

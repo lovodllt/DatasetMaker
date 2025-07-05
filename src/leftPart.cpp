@@ -1,4 +1,5 @@
 #include "leftPart.h"
+#include "cls.h"
 #include "ui_leftPart.h"
 
 leftPart::leftPart(QWidget *parent) :
@@ -8,12 +9,8 @@ leftPart::leftPart(QWidget *parent) :
     ui->setupUi(this);
 
     imageArea = ui->imageArea;
-    imageArea->setWidgetResizable(false);
-    imageArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    imageArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    imageArea->setAlignment(Qt::AlignCenter);
 
-    // 创建labelPainter实例并设置为滚动区域的widget
+    // 创建图片展示
     imageLabel = new ImageLabel();
     imageLabel->leftPartInstance = this;
     imageLabel->currentScale = 1.0;
@@ -35,7 +32,6 @@ leftPart::leftPart(QWidget *parent) :
 
     ui->leftSplitter->setStretchFactor(0, 1);  // 上方按钮区域
     ui->leftSplitter->setStretchFactor(1, 2);  // 下方图像列表
-
 
     // 连接列表点击信号
     connect(ui->imageList, &QListWidget::itemClicked, this, &leftPart::on_imageListWidget_itemClicked);
@@ -63,7 +59,7 @@ void leftPart::openFile()
     {
         QString message = tr("已选择文件夹: %1").arg(dirPath);
         emit statusMessageUpdate(message);
-        processDirectory(dirPath);
+        processDirectory(dirPath);is_labeling_ = ! is_labeling_;
     }
 }
 
@@ -94,8 +90,47 @@ void leftPart::saveFilePath()
 
     if (!savePath_.isEmpty())
     {
+        markProcessedImages(savePath_);
+
         QString message = tr("保存路径: %1 | 格式: %2").arg(savePath_).arg(saveFormat_);
         emit statusMessageUpdate(message);
+    }
+}
+
+// 标记已处理的图像
+void leftPart::markProcessedImages(const QString &savePath)
+{
+    QDir saveDir(savePath);
+    if (!saveDir.exists()) return;
+
+    // 获取保存目录下的所有文件名
+    QStringList savedFiles;
+    QDirIterator it(savePath, QDir::Files, QDirIterator::Subdirectories);
+    while (it.hasNext())
+    {
+        savedFiles << QFileInfo(it.next()).fileName();
+    }
+
+    // 遍历所有图像文件
+    for (int i = 0; i < imageFiles.size(); i++)
+    {
+        QString originalFileName = imageFiles[i].baseName();
+        bool is_processed = false;
+
+        for (const auto &savedFile : savedFiles)
+        {
+            if (savedFile.startsWith(originalFileName))
+            {
+                is_processed = true;
+                break;
+            }
+        }
+
+        if (is_processed)
+        {
+            is_images_processed[imageFiles[i].absoluteFilePath()] = true;
+            ui->imageList->item(i)->setCheckState(Qt::Checked);
+        }
     }
 }
 
@@ -109,69 +144,102 @@ void leftPart::on_nextImage_clicked()
 {
     if (imageFiles.isEmpty()) return;
 
+    saveCurrentLabels();
+
+    saveId_ = 0;
     int newIndex = (currentIndex + 1) % imageFiles.size();
     setCurrentImage(newIndex);
-
-    if (is_labeling_)
-    {
-        if (!imageLabel->tmpLabel.rect.empty())
-        {
-            // 保存标签
-        }
-
-        imageLabel->clearLabels();
-
-        // 读取新的标签
-    }
 }
 
 void leftPart::on_prevImage_clicked()
 {
     if (imageFiles.isEmpty()) return;
 
+    saveCurrentLabels();
+
+    saveId_ = 0;
     int newIndex = (currentIndex - 1) % imageFiles.size();
     setCurrentImage(newIndex);
-
-    if (is_labeling_)
-    {
-        if (!imageLabel->tmpLabel.rect.empty())
-        {
-            // 保存标签
-        }
-
-        imageLabel->clearLabels();
-
-        // 读取新的标签
-    }
 }
 
 void leftPart::on_createLabel_clicked()
 {
     if (originalPixmap.isNull())
     {
-        QString message = tr("进入标签模式失败，请先选择图片");
-        emit statusMessageUpdate(message);
+        emit statusMessageUpdate("进入标签模式失败，请先选择图片");
         return;
     }
-    else
-    {
-        is_labeling_ = ! is_labeling_;
-    }
 
-    if (is_labeling_)
+    if (!is_labeling_)
     {
-        QString message = tr("进入标签模式");
-        emit statusMessageUpdate(message);
+        is_labeling_ = true;
+        emit statusMessageUpdate("进入标签模式");
+
+        ui->createLabel->setStyleSheet(
+            "QPushButton {"
+            "    border: 1px solid #c0c0c0;"
+            "    border-radius: 5px;"
+            "    background: #d0d0d0;"
+            "    padding: 5px;"
+            "}"
+            "QPushButton:hover {"
+            "    background: #e0e0e0;"
+            "}"
+            "QPushButton:pressed {"
+            "    background: #d0d0d0;"
+            "}"
+            );
     }
     else
     {
         if (!imageLabel->tmpLabel.rect.empty())
         {
-            // 保存标签
+            statusMessageUpdate("退出标签模式失败：请先清除临时标签");
+            return;
         }
+
+        if (!detectionLabels_.empty())
+        {
+            if (savePath_.isEmpty())
+            {
+                saveFilePath();
+            }
+
+            bool needSave = false;
+            for (auto &label : detectionLabels_)
+            {
+                if (!label.is_saved)
+                {
+                    needSave = true;
+                    break;
+                }
+            }
+
+            if (needSave)
+            {
+                saveCurrentLabels();
+            }
+        }
+
         imageLabel->clearLabels();
-        QString message = tr("退出标签模式");
-        emit statusMessageUpdate(message);
+
+        is_labeling_ = false;
+        emit statusMessageUpdate("退出标签模式");
+
+        ui->createLabel->setStyleSheet(
+            "QPushButton {"
+            "    border: 1px solid #c0c0c0;"
+            "    border-radius: 5px;"
+            "    background: #f0f0f0;"
+            "    padding: 5px;"
+            "}"
+            "QPushButton:hover {"
+            "    background: #e0e0e0;"
+            "}"
+            "QPushButton:pressed {"
+            "    background: #d0d0d0;"
+            "}"
+        );
     }
 }
 
@@ -185,7 +253,49 @@ void leftPart::on_save_clicked()
 
 void leftPart::on_deleteFile_clicked()
 {
+    if (currentIndex < 0 || currentIndex >= imageFiles.size())
+    {
+        emit statusMessageUpdate("没有可删除文件");
+        return;
+    }
 
+    QFileInfo currentFile = imageFiles[currentIndex];
+    QString currentFileName = currentFile.baseName();
+
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, "确认删除",
+                           "确认要删除此图片的标签文件吗？",
+                                  QMessageBox::Yes | QMessageBox::No);
+
+    if (reply != QMessageBox::Yes)
+    {
+        return;
+    }
+
+    if (!savePath_.isEmpty())
+    {
+        QDir saveDir(savePath_);
+        if (saveDir.exists())
+        {
+            QDirIterator it(savePath_, QStringList() << currentFileName + "_*", QDir::Files, QDirIterator::Subdirectories);
+            int deleteCount = 0;
+
+            while (it.hasNext())
+            {
+                if (QFile::remove(it.next()))
+                {
+                    ui->imageList->item(currentIndex)->setCheckState(Qt::Unchecked);
+                    deleteCount++;
+                }
+            }
+
+            if (deleteCount > 0)
+            {
+                QString message = tr("已删除 %1 个标签文件").arg(deleteCount);
+                emit statusMessageUpdate(message);
+            }
+        }
+    }
 }
 
 // 创建图像文件条目
@@ -332,5 +442,53 @@ void leftPart::wheelEvent(QWheelEvent *event)
     else
     {
         QWidget::wheelEvent(event);
+    }
+}
+
+// 获取当前图像路径
+QString leftPart::getCurrentImagePath()
+{
+    if (currentIndex >= 0 && currentIndex < imageFiles.size())
+    {
+        return imageFiles[currentIndex].absoluteFilePath();
+    }
+    return QString();
+}
+
+// 保存标签文件
+void leftPart::saveCurrentLabels()
+{
+    if (savePath_.isEmpty())
+    {
+        saveFilePath();
+    }
+
+    if (!imageLabel->tmpLabel.rect.empty())
+    {
+        statusMessageUpdate("请先清除临时标签");
+        return;
+    }
+
+    if (is_labeling_ && !detectionLabels_.empty())
+    {
+        bool needSave = false;
+        for (auto &label : detectionLabels_)
+        {
+            if (!label.is_saved)
+            {
+                needSave = true;
+                break;
+            }
+        }
+
+        if (needSave)
+        {
+            if (labelMode_ == "cls")
+            {
+                clsInstance->saveClsLabels();
+            }
+
+            ui->imageList->item(currentIndex)->setCheckState(Qt::Checked);
+        }
     }
 }

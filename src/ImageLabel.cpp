@@ -1,5 +1,4 @@
 #include "ImageLabel.h"
-#include "ImageLabel.h"
 #include "leftPart.h"
 
 ImageLabel::ImageLabel(QWidget *parent) : QLabel(parent)
@@ -30,7 +29,7 @@ void ImageLabel::drawDetection(cv::Mat &img)
             int thickness = label.is_selected? 2 : 1;
 
             rectangle(img, label.rect, color, thickness, cv::LINE_AA);
-            putText(img, label.name, label.rect.tl(), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 0, 0), 0.3, cv::LINE_AA);
+            putText(img, label.name, label.rect.tl(), cv::FONT_HERSHEY_SIMPLEX, 0.3, color, 0.3, cv::LINE_AA);
 
             if (labelMode_ == "cls" && label.is_selected)
             {

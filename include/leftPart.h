@@ -16,6 +16,8 @@ namespace Ui { class leftPart; }
 
 const double zoomFactor = 1.1;
 
+class cls;
+
 class leftPart : public QWidget
 {
     Q_OBJECT
@@ -29,6 +31,9 @@ public:
     void displayImage(const QString &imagePath);
     void populateImageList(const QFileInfoList &imageFiles, QMap<QString, bool> &is_images_processed);
     void saveFilePath();
+    QString getCurrentImagePath();
+    void saveCurrentLabels();
+    void markProcessedImages(const QString &savePath);
 
 signals:
     void statusMessageUpdate(const QString &message);
@@ -58,6 +63,7 @@ private:
 
 public:
     ImageLabel *imageLabel;
+    cls *clsInstance;
 
     QPixmap originalPixmap;                    // 存储当前显示的原始图像
     QSize originalImageSize;                   // 原始图像尺寸

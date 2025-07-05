@@ -7,3 +7,4 @@ bool is_labeling_ = false;
 double confidence_{};
 std::vector<detectionLabel> detectionLabels_;
 bool is_autoCut_{};
+int saveId_ = 0;

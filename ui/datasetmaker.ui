@@ -172,12 +172,9 @@
     </widget>
     <addaction name="openFile"/>
     <addaction name="separator"/>
-    <addaction name="openLabel"/>
-    <addaction name="separator"/>
     <addaction name="saveMode"/>
     <addaction name="separator"/>
     <addaction name="exit"/>
-    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="mode">
     <property name="title">
@@ -210,7 +207,7 @@
   </widget>
   <action name="openFile">
    <property name="text">
-    <string>打开图片文件</string>
+    <string>打开文件</string>
    </property>
   </action>
   <action name="clsMode">

@@ -21,10 +21,14 @@ public:
 
     void setLeftPart(leftPart *leftPart);
 
+    QString createFileName(const QString &originalFileName);
+    void saveCroppedImage(const cv::Mat &crop, const QString &originalFileName, const QString &className);
+    void saveClsLabels();
+
 public slots:
     void onClassSelected(QAbstractButton *button);
     void on_sure_clicked();
-    void on_saveLabel_clicked();
+    void on_createLabel_clicked();
     void displayPreview();
 
 signals:
@@ -36,7 +40,7 @@ private:
     leftPart *leftPartInstance;
 
 public:
-    std::string clsname;
+    std::string clsname{};
     int width{};
     int height{};
 };

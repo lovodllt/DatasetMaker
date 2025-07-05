@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>900</width>
-    <height>726</height>
+    <height>798</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -66,17 +66,26 @@ QSplitter::handle {
      <layout class="QGridLayout" name="gridLayout_4">
       <item row="3" column="0">
        <layout class="QGridLayout" name="gridLayout_2">
-        <item row="0" column="0">
-         <widget class="QCheckBox" name="automode">
-          <property name="text">
-           <string>Auto Mode</string>
+        <item row="2" column="1">
+         <widget class="QLabel" name="conf">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
           </property>
-          <property name="checked">
-           <bool>true</bool>
+          <property name="minimumSize">
+           <size>
+            <width>30</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>置信度</string>
           </property>
          </widget>
         </item>
-        <item row="2" column="3">
+        <item row="2" column="4">
          <spacer name="horizontalSpacer_2">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -91,6 +100,48 @@ QSplitter::handle {
            </size>
           </property>
          </spacer>
+        </item>
+        <item row="0" column="2">
+         <widget class="QComboBox" name="comboBox">
+          <property name="font">
+           <font>
+            <family>Segoe UI,sans-serif</family>
+            <pointsize>10</pointsize>
+           </font>
+          </property>
+          <property name="cursor">
+           <cursorShape>PointingHandCursor</cursorShape>
+          </property>
+          <item>
+           <property name="text">
+            <string>cls</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>detection(v8)</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>detection(v12)</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>模型选择</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="3">
+         <widget class="QLabel" name="label_4">
+          <property name="text">
+           <string>（cls模型时不会另外保存图片）</string>
+          </property>
+         </widget>
         </item>
         <item row="2" column="0">
          <spacer name="horizontalSpacer">
@@ -121,53 +172,24 @@ QSplitter::handle {
           </property>
          </widget>
         </item>
-        <item row="2" column="1">
-         <widget class="QLabel" name="conf">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>30</width>
-            <height>0</height>
-           </size>
-          </property>
+        <item row="0" column="0">
+         <widget class="QCheckBox" name="automode">
           <property name="text">
-           <string>置信度</string>
+           <string>Auto Mode</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
-        <item row="0" column="1">
-         <widget class="QLabel" name="label_3">
+        <item row="2" column="3">
+         <widget class="QCheckBox" name="checkBox">
           <property name="text">
-           <string>模型选择</string>
+           <string>warp</string>
           </property>
-         </widget>
-        </item>
-        <item row="0" column="2">
-         <widget class="QComboBox" name="comboBox">
-          <property name="font">
-           <font>
-            <family>Segoe UI,sans-serif</family>
-            <pointsize>10</pointsize>
-           </font>
+          <property name="checked">
+           <bool>true</bool>
           </property>
-          <property name="cursor">
-           <cursorShape>PointingHandCursor</cursorShape>
-          </property>
-          <item>
-           <property name="text">
-            <string>cls</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>detection</string>
-           </property>
-          </item>
          </widget>
         </item>
        </layout>
@@ -307,6 +329,16 @@ QSplitter::handle {
             </property>
             <property name="shortcut">
              <string>8</string>
+            </property>
+            <attribute name="buttonGroup">
+             <string notr="true">classButtonGroup</string>
+            </attribute>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="negative">
+            <property name="text">
+             <string>negative</string>
             </property>
             <attribute name="buttonGroup">
              <string notr="true">classButtonGroup</string>
@@ -480,7 +512,7 @@ QPushButton:pressed {
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="saveLabel">
+        <widget class="QPushButton" name="createLabel">
          <property name="cursor">
           <cursorShape>PointingHandCursor</cursorShape>
          </property>
@@ -499,7 +531,10 @@ QPushButton:pressed {
 }</string>
          </property>
          <property name="text">
-          <string>保存标签</string>
+          <string>创建标签</string>
+         </property>
+         <property name="shortcut">
+          <string>Return</string>
          </property>
         </widget>
        </item>
