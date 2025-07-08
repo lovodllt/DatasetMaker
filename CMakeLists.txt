@@ -3,13 +3,14 @@ project(DatasetMaker)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(OpenCV_DIR "/home/lovod/opencv-4.8.1/build")
 
 # 启用 Qt 自动处理
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(OpenCV REQUIRED)
+find_package(OpenCV 4.8.1 REQUIRED)
 
 # 包含构建目录
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -43,6 +44,8 @@ add_executable(${PROJECT_NAME}
         ${UI_HEADERS}
         include/common.h
         src/common.cpp
+        src/autoMode.cpp
+        include/autoMode.h
 )
 
 # 链接 Qt 库

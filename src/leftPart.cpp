@@ -6,8 +6,8 @@ leftPart::leftPart(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::leftPart)
 {
+    autoModeInstance = new autoMode();
     ui->setupUi(this);
-
     imageArea = ui->imageArea;
 
     // 创建图片展示
@@ -35,6 +35,7 @@ leftPart::leftPart(QWidget *parent) :
 
     // 连接列表点击信号
     connect(ui->imageList, &QListWidget::itemClicked, this, &leftPart::on_imageListWidget_itemClicked);
+    connect(imageLabel, &ImageLabel::onLabelSelected, this, &leftPart::forwardOnLabelSelected);
 
     // 设置焦点
     setFocusPolicy(Qt::StrongFocus);
@@ -42,6 +43,7 @@ leftPart::leftPart(QWidget *parent) :
 
 leftPart::~leftPart()
 {
+    delete autoModeInstance;
     delete ui;
 }
 
@@ -59,7 +61,7 @@ void leftPart::openFile()
     {
         QString message = tr("已选择文件夹: %1").arg(dirPath);
         emit statusMessageUpdate(message);
-        processDirectory(dirPath);is_labeling_ = ! is_labeling_;
+        processDirectory(dirPath);
     }
 }
 
@@ -144,22 +146,26 @@ void leftPart::on_nextImage_clicked()
 {
     if (imageFiles.isEmpty()) return;
 
-    saveCurrentLabels();
+    if (saveCurrentLabels())
+    {
+        saveId_ = 0;
 
-    saveId_ = 0;
-    int newIndex = (currentIndex + 1) % imageFiles.size();
-    setCurrentImage(newIndex);
+        int newIndex = (currentIndex + 1) % imageFiles.size();
+        setCurrentImage(newIndex);
+    }
 }
 
 void leftPart::on_prevImage_clicked()
 {
     if (imageFiles.isEmpty()) return;
 
-    saveCurrentLabels();
+    if (saveCurrentLabels())
+    {
+        saveId_ = 0;
 
-    saveId_ = 0;
-    int newIndex = (currentIndex - 1) % imageFiles.size();
-    setCurrentImage(newIndex);
+        int newIndex = (currentIndex - 1) % imageFiles.size();
+        setCurrentImage(newIndex);
+    }
 }
 
 void leftPart::on_createLabel_clicked()
@@ -324,10 +330,13 @@ void leftPart::populateImageList(const QFileInfoList &imageFiles, QMap<QString, 
 // 图像文件条目点击处理
 void leftPart::on_imageListWidget_itemClicked(QListWidgetItem *item)
 {
-    int index = ui->imageList->row(item);
-    if (index >= 0 && index < imageFiles.size())
+    if(saveCurrentLabels())
     {
-        setCurrentImage(index);
+        int index = ui->imageList->row(item);
+        if (index >= 0 && index < imageFiles.size())
+        {
+            setCurrentImage(index);
+        }
     }
 }
 
@@ -382,6 +391,41 @@ void leftPart::displayImage(const QString &imagePath)
     // 设置图像到标签
     imageLabel->setPixmap(scaledPixmap);
     imageLabel->resize(scaledSize);
+
+    // 确保 imageLabel->originalImg 被正确设置
+    QImage qImg = originalPixmap.toImage().convertToFormat(QImage::Format_RGB888);
+    imageLabel->originalImg = cv::Mat(
+        qImg.height(),
+        qImg.width(),
+        CV_8UC3,
+        const_cast<uchar*>(qImg.bits()),
+        qImg.bytesPerLine()
+    );
+
+    // 添加调试输出
+    qDebug() << "AutoMode status:" << autoMode_
+             << "| Processed:" << is_images_processed[imagePath]
+             << "| Labeling:" << is_labeling_
+             << "| Image valid:" << !imageLabel->originalImg.empty();
+
+    // 自动标注
+    if (autoMode_ && !is_images_processed[imagePath] && is_labeling_ && detectionLabels_.empty())
+    {
+        cv::Mat img = imageLabel->originalImg.clone();
+
+        if (!img.empty())
+        {
+            autoModeInstance->Inference(img);
+            imageLabel->drawLabels();
+            imageLabel->update();
+
+            emit statusMessageUpdate("图片自动标注完成");
+        }
+        else
+        {
+            std::cerr << "Error: Image is empty!" << std::endl;
+        }
+    }
 }
 
 // 滚轮事件
@@ -456,17 +500,23 @@ QString leftPart::getCurrentImagePath()
 }
 
 // 保存标签文件
-void leftPart::saveCurrentLabels()
+bool leftPart::saveCurrentLabels()
 {
     if (savePath_.isEmpty())
     {
         saveFilePath();
     }
 
+    if (savePath_.isEmpty())
+    {
+        emit statusMessageUpdate("保存路径未设置");
+        return false;
+    }
+
     if (!imageLabel->tmpLabel.rect.empty())
     {
         statusMessageUpdate("请先清除临时标签");
-        return;
+        return false;
     }
 
     if (is_labeling_ && !detectionLabels_.empty())
@@ -491,4 +541,15 @@ void leftPart::saveCurrentLabels()
             ui->imageList->item(currentIndex)->setCheckState(Qt::Checked);
         }
     }
+
+    return true;
 }
+
+void leftPart::forwardOnLabelSelected(detectionLabel label)
+{
+    if (labelMode_ == "cls" && clsInstance)
+    {
+        clsInstance->onLabelSelected(label);
+    }
+}
+

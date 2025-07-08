@@ -9,16 +9,18 @@ cls::cls(QWidget *parent) :
     ui->setupUi(this);
 
     previewLabel = ui->previewLabel;
-    QButtonGroup *classButtonGroup = ui->classButtonGroup;
+    classButtonGroup = ui->classButtonGroup;
 
+    is_autoCut_ = ui->autoCut->isChecked();
     ui->widthEdit->setEnabled(false);
     ui->heightEdit->setEnabled(false);
 
     connect(classButtonGroup, QOverload<QAbstractButton *>::of(&QButtonGroup::buttonClicked), this, &cls::onClassSelected);
     connect(ui->autoCut, &QRadioButton::toggled, [this](bool checked) {
-        is_autoCut_ = true;
+        is_autoCut_ = checked;
         ui->widthEdit->setEnabled(checked);
         ui->heightEdit->setEnabled(checked);
+        emit statusMessageUpdate(checked ? "自动裁剪模式已启用" : "自动裁剪模式已禁用");
     });
 }
 
@@ -39,6 +41,16 @@ void cls::onClassSelected(QAbstractButton *button)
 {
     QString classId = button->text();
     clsname = classId.toStdString();
+
+    for (auto &label : detectionLabels_)
+    {
+        if (label.is_selected)
+        {
+            label.name = clsname;
+            leftPartInstance->imageLabel->drawLabels();
+            break;
+        }
+    }
 }
 
 // 宽高
@@ -51,9 +63,18 @@ void cls::on_sure_clicked()
 
     if (is_autoCut_)
     {
-        width = widthString.toInt();
-        height = heightString.toInt();
-        emit statusMessageUpdate("自动裁剪模式: 裁剪大小为 " + widthString + "x" + heightString);
+        if (widthString.toInt() > 0 && heightString.toInt() > 0)
+        {
+            width = widthString.toInt();
+            height = heightString.toInt();
+            emit statusMessageUpdate("自动裁剪模式: 裁剪大小为 " + widthString + "x" + heightString);
+        }
+        else
+        {
+            ui->widthEdit->setText("0");
+            ui->heightEdit->setText("0");
+            emit statusMessageUpdate("自动裁剪模式: 裁剪大小无效");
+        }
     }
     else
     {
@@ -73,7 +94,7 @@ void cls::on_createLabel_clicked()
     detectionLabel label;
     detectionLabel &tmpLabel = leftPartInstance->imageLabel->tmpLabel;
 
-    if (is_autoCut_ && width == 0 || height == 0)
+    if (is_autoCut_ && (width == 0 || height == 0))
     {
         emit statusMessageUpdate("保存错误: 未设置裁剪大小");
         return;
@@ -200,7 +221,20 @@ void cls::saveClsLabels()
     {
         if (!label.is_saved)
         {
-            cv::Mat crop = originalImg(label.rect);
+            cv::Mat crop;
+            if (is_warp_)
+            {
+                crop = label.warp;
+                if (crop.empty())
+                {
+                    emit statusMessageUpdate("错误: warp图像为空");
+                    crop = originalImg(label.rect);
+                }
+            }
+            else
+            {
+                crop = originalImg(label.rect);
+            }
             saveCroppedImage(crop, originalFileName, QString::fromStdString(label.name));
             label.is_saved = true;
             savedCount++;
@@ -213,7 +247,7 @@ void cls::saveClsLabels()
     }
     else
     {
-        emit statusMessageUpdate("没要需要保存的标签");
+        emit statusMessageUpdate("没有需要保存的标签");
     }
 }
 
@@ -230,9 +264,8 @@ void cls::displayPreview()
     cv::Mat originalImg = leftPartInstance->imageLabel->originalImg.clone();
 
     // 预览标签的lamba函数
-    auto showPreview = [this, &originalImg](const cv::Rect &rect)
+    auto showPreview = [this, &originalImg](const cv::Mat img)
     {
-        cv::Mat img = originalImg(rect);
         QImage qImg(img.data, img.cols, img.rows, img.step, QImage::Format_RGB888);
 
         QPixmap scaledPixmap = QPixmap::fromImage(qImg).scaled(
@@ -247,7 +280,8 @@ void cls::displayPreview()
     // 优先预览临时标签, 其次预览选中标签
     if (!leftPartInstance->imageLabel->tmpLabel.rect.empty())
     {
-        showPreview(leftPartInstance->imageLabel->tmpLabel.rect);
+        cv::Mat img = originalImg(leftPartInstance->imageLabel->tmpLabel.rect);
+        showPreview(img);
     }
     else if (!detectionLabels_.empty())
     {
@@ -255,12 +289,127 @@ void cls::displayPreview()
         {
             if (label.is_selected)
             {
-                showPreview(label.rect);
+                if (is_warp_)
+                {
+                    showPreview(label.warp);
+                }
+                else
+                {
+                    cv::Mat img = originalImg(label.rect);
+                    showPreview(img);
+                }
             }
         }
     }
     else
     {
         previewLabel->clear();
+    }
+}
+
+// 自动模式
+void cls::on_autoMode_toggled(bool checked)
+{
+    autoMode_ = checked;
+
+    if (autoMode_)
+    {
+        emit statusMessageUpdate("自动标注模式已开启");
+        leftPartInstance->displayImage(leftPartInstance->getCurrentImagePath());
+    }
+    else
+    {
+        emit statusMessageUpdate("自动标注模式已关闭");
+    }
+}
+
+// 保存warp图片
+void cls::on_warp_toggled(bool checked)
+{
+    if (checked)
+    {
+        is_warp_ = true;
+        emit statusMessageUpdate("保存warp后图片");
+    }
+    else
+    {
+        is_warp_ = false;
+        emit statusMessageUpdate("保存原始图片");
+    }
+}
+
+// 置信度阈值更新
+void cls::on_confidenceEdit_textChanged(const QString &text)
+{
+    bool ok;
+    double confidence = text.toDouble(&ok);
+
+    if (ok && confidence >= 0 && confidence <= 1)
+    {
+        confidence_threshold_ = confidence;
+        emit statusMessageUpdate("置信度阈值已设置为: " + text);
+    }
+    else
+    {
+        emit statusMessageUpdate("输入无效, 请输入0-1之间的数值");
+        if (!text.isEmpty())
+        {
+            ui->confidenceEdit->blockSignals(true);
+            ui->confidenceEdit->setText(QString::number(confidence_threshold_));
+            ui->confidenceEdit->blockSignals(false);
+        }
+    }
+}
+
+// nms阈值更新
+void cls::on_nmsEdit_textChanged(const QString &text)
+{
+    bool ok;
+    double nms = text.toDouble(&ok);
+
+    if (ok && nms >= 0 && nms <= 1)
+    {
+        nms_threshold_ = nms;
+        emit statusMessageUpdate("nms阈值已设置为: " + text);
+    }
+    else
+    {
+        emit statusMessageUpdate("输入无效, 请输入0-1之间的数值");
+        if (!text.isEmpty())
+        {
+            ui->nmsEdit->blockSignals(true);
+            ui->nmsEdit->setText(QString::number(nms_threshold_));
+            ui->nmsEdit->blockSignals(false);
+        }
+    }
+}
+
+// 模型选择
+void cls::on_modelSelection_currentTextChanged(const QString &text)
+{
+    modelSelection_ = text.toStdString();
+    if (modelSelection_ == "yolov8")
+    {
+        leftPartInstance->autoModeInstance->setModelPath(v8_model_path_);
+    }
+    else if (modelSelection_ == "yolov12")
+    {
+        leftPartInstance->autoModeInstance->setModelPath(v12_model_path_);
+    }
+}
+
+// 标签类别展示和更新
+void cls::onLabelSelected(detectionLabel &label)
+{
+    QString className = QString::fromStdString(label.name);
+
+    for (auto button : classButtonGroup->buttons())
+    {
+        if (button->text() == className)
+        {
+            button->setChecked(true);
+            clsname = label.name;
+            break;
+        }
     }
 }

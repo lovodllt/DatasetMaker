@@ -16,6 +16,7 @@ DatasetMaker::DatasetMaker(QWidget *parent)
 
     connect(leftWidget(), &leftPart::statusMessageUpdate, this, &DatasetMaker::statusMessageUpdate);
     connect(clsWidget(), &cls::statusMessageUpdate, this, &DatasetMaker::statusMessageUpdate);
+    connect(leftWidget()->autoModeInstance, &autoMode::statusMessageUpdate, this, &DatasetMaker::statusMessageUpdate);
     connect(leftWidget()->imageLabel, &ImageLabel::previewRequested, clsWidget(), &cls::displayPreview);
 }
 

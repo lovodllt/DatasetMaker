@@ -136,6 +136,11 @@ void ImageLabel::mousePressEvent(QMouseEvent *event)
             label.is_selected = true;
             labelSelected = true;
 
+            if (labelMode_ == "cls")
+            {
+                emit onLabelSelected(label);
+            }
+
             QString message = tr("标签模式: 选中标签 '%1'").arg(QString::fromStdString(label.name));
             emit statusMessageUpdate(message);
             break;

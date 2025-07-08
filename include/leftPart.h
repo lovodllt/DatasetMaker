@@ -9,8 +9,8 @@
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QFileDialog>
-#include "common.h"
 #include "ImageLabel.h"
+#include "autoMode.h"
 
 namespace Ui { class leftPart; }
 
@@ -29,11 +29,13 @@ public:
     void openFile();
     void processDirectory(const QString& dirPath);
     void displayImage(const QString &imagePath);
+    void setCurrentImage(int index);
     void populateImageList(const QFileInfoList &imageFiles, QMap<QString, bool> &is_images_processed);
     void saveFilePath();
     QString getCurrentImagePath();
-    void saveCurrentLabels();
+    bool saveCurrentLabels();
     void markProcessedImages(const QString &savePath);
+    void forwardOnLabelSelected(detectionLabel label);
 
 signals:
     void statusMessageUpdate(const QString &message);
@@ -52,19 +54,17 @@ protected:
     void wheelEvent(QWheelEvent *event) override;
 
 private:
-    void setCurrentImage(int index);
-
     Ui::leftPart *ui;
-
     QScrollArea *imageArea;                    // 滚动区域
     QFileInfoList imageFiles;                  // 存储图片信息
     QMap<QString, bool> is_images_processed;   // 是否处理了图像
-    int currentIndex = -1;                     // 当前显示的图片索引
 
 public:
     ImageLabel *imageLabel;
     cls *clsInstance;
+    autoMode *autoModeInstance;
 
+    int currentIndex = -1;                     // 当前显示的图片索引
     QPixmap originalPixmap;                    // 存储当前显示的原始图像
     QSize originalImageSize;                   // 原始图像尺寸
     double currentScale;

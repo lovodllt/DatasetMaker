@@ -6,7 +6,6 @@
 #include <QMap>
 #include <QSettings>
 
-#include "common.h"
 #include "cls.h"
 #include "detection.h"
 #include "leftPart.h"

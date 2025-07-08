@@ -23,6 +23,7 @@ public:
 signals:
     void statusMessageUpdate(const QString &message);
     void previewRequested();
+    void onLabelSelected(detectionLabel label);
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;
