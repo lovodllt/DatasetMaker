@@ -45,7 +45,7 @@ dataImg autoMode::preprocess(cv::Mat &img)
         cv::Mat lut(1, 256, CV_8UC1);
         for (int i = 0; i < 256; i++)
         {
-            lut.at<uchar>(i) = cv::saturate_cast<uchar>(pow(i / 255.0, 0.7) * 255.0);
+            lut.at<uchar>(i) = cv::saturate_cast<uchar>(pow(i / 255.0, gamma) * 255.0);
         }
         LUT(channels[0], lut, channels[0]);
     }
@@ -107,6 +107,12 @@ void autoMode::Inference(cv::Mat &img)
 
     qualifiedArmors.clear();
     finalArmors_.clear();
+
+    if (tmp_warp_close)
+    {
+        tmp_warp_close = false;
+        is_warp_ = true;
+    }
 
     cvtColor(img, img, cv::COLOR_RGB2BGR);
 
@@ -179,11 +185,15 @@ void autoMode::Inference(cv::Mat &img)
 
     if (is_warp_)
     {
+        std::vector<inferArmor> tmpArmors = qualifiedArmors;
+
         barFiliter();
         armorFiliter();
 
         if (!qualifiedArmors.empty() && finalArmors_.empty())
         {
+            is_warp_ = false;
+            tmp_warp_close = true;
             noWarpFiliter();
         }
     }
@@ -195,10 +205,12 @@ void autoMode::Inference(cv::Mat &img)
     if (!finalArmors_.empty())
     {
         classify(img);
+        std::cout << finalArmors_[0].label << std::endl;
         update();
     }
     else
     {
+        std::cout << "finalArmors_ is empty" << std::endl;
         emit statusMessageUpdate("未检测到目标");
     }
 }
@@ -348,6 +360,12 @@ void autoMode::barFiliter()
             }
         }
 
+        if (tmpBars.size() < 2)
+        {
+            std::cout<<"tmpBars.size() < 2"<<std::endl;
+            continue;
+        }
+
         std::sort(tmpBars.begin(), tmpBars.end(), [](const Bar& a, const Bar& b) {
             return a.center.x < b.center.x;
         });
@@ -480,7 +498,8 @@ void autoMode::noWarpFiliter()
     {
         if (armor.box.empty())
         {
-            return;
+            std::cout<<"qualifiedArmor.box is empty"<<std::endl;
+            continue;
         }
 
         finalArmor final_armor;

@@ -225,11 +225,6 @@ void cls::saveClsLabels()
             if (is_warp_)
             {
                 crop = label.warp;
-                if (crop.empty())
-                {
-                    emit statusMessageUpdate("错误: warp图像为空");
-                    crop = originalImg(label.rect);
-                }
             }
             else
             {
@@ -249,6 +244,8 @@ void cls::saveClsLabels()
     {
         emit statusMessageUpdate("没有需要保存的标签");
     }
+
+
 }
 
 // 展示预览图

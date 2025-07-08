@@ -78,9 +78,11 @@ private:
     std::once_flag flag_;
     cv::dnn::Net detectioNet;
     cv::dnn::Net clsNet;
-    int target_size = 640;
+    int target_size = 640;\
+    float gamma = 0.55;
     std::vector<inferArmor> qualifiedArmors;
     bool is_cut = false;
+    bool tmp_warp_close = false;
 };
 
 // HSV
