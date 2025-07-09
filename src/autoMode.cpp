@@ -205,12 +205,10 @@ void autoMode::Inference(cv::Mat &img)
     if (!finalArmors_.empty())
     {
         classify(img);
-        std::cout << finalArmors_[0].label << std::endl;
         update();
     }
     else
     {
-        std::cout << "finalArmors_ is empty" << std::endl;
         emit statusMessageUpdate("未检测到目标");
     }
 }
@@ -642,7 +640,7 @@ void autoMode::update()
             }
             else
             {
-                label.warp = NULL;
+                label.warp = cv::Mat();
             }
 
             detectionLabels_.push_back(label);

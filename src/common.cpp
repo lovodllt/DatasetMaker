@@ -13,6 +13,13 @@ int saveId_ = 0;
 bool autoMode_ = false;
 std::string modelSelection_{};
 bool is_warp_ = false;
-const std::string v8_model_path_ = "../model/v8.onnx";
-const std::string v12_model_path_ = "../model/v12.onnx";
-const std::string cls_model_path_ = "../model/number_classifier.onnx";
+const std::string v8_model_path_ = getModelPath("v8.onnx");
+const std::string v12_model_path_ = getModelPath("v12.onnx");
+const std::string cls_model_path_ = getModelPath("number_classifier.onnx");
+
+std::string getModelPath(const std::string modelPath)
+{
+    const char* appdir = std::getenv("APPDIR");
+    std::string appdirStr = appdir ? appdir : "";
+    return appdirStr.empty() ? "../model/" + modelPath : appdirStr + "/usr/share/DatasetMaker/model/" + modelPath;
+}

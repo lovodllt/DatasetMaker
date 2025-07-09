@@ -48,4 +48,7 @@ extern const std::string v8_model_path_;
 extern const std::string v12_model_path_;
 extern const std::string cls_model_path_;
 
+std::string getModelPath(const std::string modelPath);
+
+
 #endif //COMMON_H
