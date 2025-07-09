@@ -6,12 +6,12 @@ void autoMode::init()
     clsNet = cv::dnn::readNetFromONNX(cls_model_path_);
 }
 
-void autoMode::setModelPath(const std::string &detectio_path)
+void autoMode::setModelPath(const std::string &detection_path)
 {
-    detectioNet = cv::dnn::readNetFromONNX(detectio_path);
+    detectioNet = cv::dnn::readNetFromONNX(detection_path);
     if (detectioNet.empty())
     {
-        emit statusMessageUpdate("模型加载失败");
+        emit statusMessageUpdate("模型修改失败");
     }
     else
     {
@@ -185,8 +185,6 @@ void autoMode::Inference(cv::Mat &img)
 
     if (is_warp_)
     {
-        std::vector<inferArmor> tmpArmors = qualifiedArmors;
-
         barFiliter();
         armorFiliter();
 
@@ -205,7 +203,7 @@ void autoMode::Inference(cv::Mat &img)
     if (!finalArmors_.empty())
     {
         classify(img);
-        update();
+        update(img);
     }
     else
     {
@@ -622,28 +620,35 @@ void autoMode::classify(cv::Mat img)
     }
 }
 
-void autoMode::update()
+void autoMode::update(cv::Mat &img)
 {
-    if (labelMode_ == "cls")
+    for (auto &armor : finalArmors_)
     {
-        for (auto &armor : finalArmors_)
+        detectionLabel label;
+        label.name = armor.label;
+        label.rect = armor.box;
+        label.color = armor.color;
+        label.is_selected = false;
+        label.is_saved = false;
+        label.confidence = armor.confidence;
+
+        if (is_warp_)
         {
-            detectionLabel label;
-            label.name = armor.label;
-            label.rect = armor.box;
-            label.is_selected = false;
-            label.is_saved = false;
-
-            if (is_warp_)
-            {
-                label.warp = armor.warp;
-            }
-            else
-            {
-                label.warp = cv::Mat();
-            }
-
-            detectionLabels_.push_back(label);
+            label.warp = armor.warp;
         }
+        else
+        {
+            label.warp = img(label.rect);
+        }
+
+        if (is_binary_)
+        {
+            cv::Mat binary;
+            cvtColor(label.warp, binary, cv::COLOR_BGR2GRAY);
+            threshold(binary, binary, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+            cvtColor(binary, label.warp, cv::COLOR_GRAY2BGR);
+        }
+
+        detectionLabels_.push_back(label);
     }
 }

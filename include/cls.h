@@ -23,21 +23,20 @@ public:
     void saveCroppedImage(const cv::Mat &crop, const QString &originalFileName, const QString &className);
     void saveClsLabels();
 
-    double getConfidenceThreshold() const;
-    QString getModelSelection() const;
-
 public slots:
     void onClassSelected(QAbstractButton *button);
     void on_sure_clicked();
     void on_createLabel_clicked();
     void on_autoMode_toggled(bool checked);
+    void on_inferAgain_clicked();
     void on_warp_toggled(bool checked);
+    void on_binary_toggled(bool checked);
     void on_confidenceEdit_textChanged(const QString &text);
     void on_nmsEdit_textChanged(const QString &text);
     void on_modelSelection_currentTextChanged(const QString &text);
 
     void displayPreview();
-    void onLabelSelected(detectionLabel &label);
+    void onClsLabelSelected(detectionLabel &label);
 
 signals:
     void statusMessageUpdate(const QString &message);
@@ -47,7 +46,6 @@ private:
     QLabel *previewLabel;
     leftPart *leftPartInstance;
     autoMode *autoModeInstance;
-
     QButtonGroup *classButtonGroup;
 
 public:

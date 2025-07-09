@@ -65,11 +65,10 @@ public:
     void armorFiliter();
     void noWarpFiliter();
 
-
     cv::Mat extractNumber(cv::Mat &img, finalArmor &armor);
     void classify(cv::Mat img);
 
-    void update();
+    void update(cv::Mat &img);
 
 signals:
     void statusMessageUpdate(const QString &message);
@@ -78,7 +77,7 @@ private:
     std::once_flag flag_;
     cv::dnn::Net detectioNet;
     cv::dnn::Net clsNet;
-    int target_size = 640;\
+    int target_size = 640;
     float gamma = 0.55;
     std::vector<inferArmor> qualifiedArmors;
     bool is_cut = false;

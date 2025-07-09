@@ -17,6 +17,7 @@ namespace Ui { class leftPart; }
 const double zoomFactor = 1.1;
 
 class cls;
+class detection;
 
 class leftPart : public QWidget
 {
@@ -34,7 +35,9 @@ public:
     void saveFilePath();
     QString getCurrentImagePath();
     bool saveCurrentLabels();
-    void markProcessedImages(const QString &savePath);
+    void loadClsLabel(const QString &savePath);
+    void loadDetectionLabel(const QString &savePath);
+    void loadDetectionLabelOnImage(const QString &imagePath);
     void forwardOnLabelSelected(detectionLabel label);
 
 signals:
@@ -62,7 +65,8 @@ private:
 public:
     ImageLabel *imageLabel;
     cls *clsInstance;
-    autoMode *autoModeInstance;
+    detection *detectionInstance;
+    std::unique_ptr<autoMode> autoModeInstance;
 
     int currentIndex = -1;                     // 当前显示的图片索引
     QPixmap originalPixmap;                    // 存储当前显示的原始图像

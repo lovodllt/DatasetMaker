@@ -7,6 +7,7 @@ cls::cls(QWidget *parent) :
     leftPartInstance(nullptr)
 {
     ui->setupUi(this);
+    colorSave_ = false;
 
     previewLabel = ui->previewLabel;
     classButtonGroup = ui->classButtonGroup;
@@ -122,11 +123,21 @@ void cls::on_createLabel_clicked()
     label.name = clsname;
     label.rect = tmpLabel.rect;
     label.is_selected = true;
+    label.warp = leftPartInstance->imageLabel->originalImg(tmpLabel.rect);
+
+    if (is_binary_)
+    {
+        cv::Mat binary;
+        cvtColor(label.warp, binary, cv::COLOR_BGR2GRAY);
+        threshold(binary, binary, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+        cv::cvtColor(binary, label.warp, cv::COLOR_GRAY2BGR);
+    }
 
     detectionLabels_.push_back(label);
     tmpLabel = detectionLabel();
 
     leftPartInstance->imageLabel->drawLabels();
+    displayPreview();
 
     emit statusMessageUpdate("标签创建成功");
 }
@@ -221,15 +232,8 @@ void cls::saveClsLabels()
     {
         if (!label.is_saved)
         {
-            cv::Mat crop;
-            if (is_warp_)
-            {
-                crop = label.warp;
-            }
-            else
-            {
-                crop = originalImg(label.rect);
-            }
+            cv::Mat crop = label.warp;
+
             saveCroppedImage(crop, originalFileName, QString::fromStdString(label.name));
             label.is_saved = true;
             savedCount++;
@@ -244,8 +248,6 @@ void cls::saveClsLabels()
     {
         emit statusMessageUpdate("没有需要保存的标签");
     }
-
-
 }
 
 // 展示预览图
@@ -261,7 +263,7 @@ void cls::displayPreview()
     cv::Mat originalImg = leftPartInstance->imageLabel->originalImg.clone();
 
     // 预览标签的lamba函数
-    auto showPreview = [this, &originalImg](const cv::Mat img)
+    auto showPreview = [this](const cv::Mat img)
     {
         QImage qImg(img.data, img.cols, img.rows, img.step, QImage::Format_RGB888);
 
@@ -286,15 +288,7 @@ void cls::displayPreview()
         {
             if (label.is_selected)
             {
-                if (is_warp_)
-                {
-                    showPreview(label.warp);
-                }
-                else
-                {
-                    cv::Mat img = originalImg(label.rect);
-                    showPreview(img);
-                }
+                showPreview(label.warp);
             }
         }
     }
@@ -320,6 +314,21 @@ void cls::on_autoMode_toggled(bool checked)
     }
 }
 
+// 再次推理
+void cls::on_inferAgain_clicked()
+{
+    if (autoMode_)
+    {
+        emit statusMessageUpdate("重新进行推理");
+        leftPartInstance->displayImage(leftPartInstance->getCurrentImagePath());
+    }
+    else
+    {
+        emit statusMessageUpdate("自动标注模式未开启");
+    }
+}
+
+
 // 保存warp图片
 void cls::on_warp_toggled(bool checked)
 {
@@ -331,7 +340,22 @@ void cls::on_warp_toggled(bool checked)
     else
     {
         is_warp_ = false;
-        emit statusMessageUpdate("保存原始图片");
+        emit statusMessageUpdate("关闭warp模式");
+    }
+}
+
+// 保存binary图片
+void cls::on_binary_toggled(bool checked)
+{
+    if (checked)
+    {
+        is_binary_ = true;
+        emit statusMessageUpdate("保存binary后图片");
+    }
+    else
+    {
+        is_binary_ = false;
+        emit statusMessageUpdate("关闭binary模式");
     }
 }
 
@@ -396,7 +420,7 @@ void cls::on_modelSelection_currentTextChanged(const QString &text)
 }
 
 // 标签类别展示和更新
-void cls::onLabelSelected(detectionLabel &label)
+void cls::onClsLabelSelected(detectionLabel &label)
 {
     QString className = QString::fromStdString(label.name);
 

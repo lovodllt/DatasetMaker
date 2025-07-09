@@ -66,54 +66,6 @@ QSplitter::handle {
      <layout class="QGridLayout" name="gridLayout_4">
       <item row="3" column="0">
        <layout class="QGridLayout" name="gridLayout_2">
-        <item row="0" column="2">
-         <widget class="QComboBox" name="modelSelection">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="font">
-           <font>
-            <family>Segoe UI,sans-serif</family>
-            <pointsize>10</pointsize>
-           </font>
-          </property>
-          <property name="cursor">
-           <cursorShape>PointingHandCursor</cursorShape>
-          </property>
-          <item>
-           <property name="text">
-            <string>yolov8</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>yolov12</string>
-           </property>
-          </item>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QLabel" name="label_3">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>70</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>模型选择</string>
-          </property>
-         </widget>
-        </item>
         <item row="0" column="4">
          <widget class="QLabel" name="label_4">
           <property name="text">
@@ -131,16 +83,6 @@ QSplitter::handle {
           </property>
           <property name="text">
            <string>Auto Mode</string>
-          </property>
-          <property name="checked">
-           <bool>false</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="3">
-         <widget class="QCheckBox" name="warp">
-          <property name="text">
-           <string>warp</string>
           </property>
           <property name="checked">
            <bool>false</bool>
@@ -238,6 +180,91 @@ QSplitter::handle {
            </size>
           </property>
          </spacer>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_3">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>70</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>模型选择</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QComboBox" name="modelSelection">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="font">
+           <font>
+            <family>Segoe UI,sans-serif</family>
+            <pointsize>10</pointsize>
+           </font>
+          </property>
+          <property name="cursor">
+           <cursorShape>PointingHandCursor</cursorShape>
+          </property>
+          <item>
+           <property name="text">
+            <string>yolov8</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>yolov12</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="QCheckBox" name="warp">
+          <property name="text">
+           <string>warp</string>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="3">
+         <widget class="QCheckBox" name="binary">
+          <property name="text">
+           <string>binary</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QPushButton" name="inferAgain">
+          <property name="styleSheet">
+           <string notr="true">QPushButton {
+    border: 1px solid #c0c0c0;
+    border-radius: 5px;
+    background: #f0f0f0;
+}
+QPushButton:hover {
+    background: #e0e0e0;
+}
+QPushButton:pressed {
+    background: #d0d0d0;
+}</string>
+          </property>
+          <property name="text">
+           <string>重新推理</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>

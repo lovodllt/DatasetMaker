@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.17)
 project(DatasetMaker)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(OpenCV_DIR "/home/lovod/opencv-4.8.1/build")
 

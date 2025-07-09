@@ -41,7 +41,6 @@ public:
     leftPart *leftPartInstance;
 
     cv::Mat originalImg;
-    cv::Mat preview;
     double currentScale;
     detectionLabel tmpLabel;
     bool labelSelected = false;

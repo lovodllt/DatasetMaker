@@ -13,11 +13,13 @@ DatasetMaker::DatasetMaker(QWidget *parent)
 
     // 传递指针
     clsWidget()->setLeftPart(leftWidget());
+    detectionWidget()->setLeftPart(leftWidget());
 
     connect(leftWidget(), &leftPart::statusMessageUpdate, this, &DatasetMaker::statusMessageUpdate);
     connect(clsWidget(), &cls::statusMessageUpdate, this, &DatasetMaker::statusMessageUpdate);
-    connect(leftWidget()->autoModeInstance, &autoMode::statusMessageUpdate, this, &DatasetMaker::statusMessageUpdate);
+    connect(leftWidget()->autoModeInstance.get(), &autoMode::statusMessageUpdate, this, &DatasetMaker::statusMessageUpdate);
     connect(leftWidget()->imageLabel, &ImageLabel::previewRequested, clsWidget(), &cls::displayPreview);
+    connect(detectionWidget(), &detection::statusMessageUpdate, this, &DatasetMaker::statusMessageUpdate);
 }
 
 DatasetMaker::~DatasetMaker()

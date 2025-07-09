@@ -1,5 +1,6 @@
 #include "ImageLabel.h"
 #include "leftPart.h"
+#include "detection.h"
 
 ImageLabel::ImageLabel(QWidget *parent) : QLabel(parent)
 {
@@ -29,11 +30,22 @@ void ImageLabel::drawDetection(cv::Mat &img)
             int thickness = label.is_selected? 2 : 1;
 
             rectangle(img, label.rect, color, thickness, cv::LINE_AA);
-            putText(img, label.name, label.rect.tl(), cv::FONT_HERSHEY_SIMPLEX, 0.3, color, 0.3, cv::LINE_AA);
 
-            if (labelMode_ == "cls" && label.is_selected)
+            if (labelMode_ == "cls")
             {
-                preview = img(label.rect);
+                putText(img, label.name, label.rect.tl(), cv::FONT_HERSHEY_SIMPLEX, 1, color, 0.5, cv::LINE_AA);
+            }
+            else if (labelMode_ == "detection")
+            {
+                if (colorSave_)
+                {
+                    putText(img, label.color, label.rect.tl(), cv::FONT_HERSHEY_SIMPLEX, 1, color, 0.5, cv::LINE_AA);
+                }
+            }
+
+            if (autoMode_ && label.confidence > confidence_threshold_)
+            {
+                putText(img, QString::number(label.confidence, 'f', 2).toStdString(), cv::Point(label.rect.x + 60, label.rect.y), cv::FONT_HERSHEY_SIMPLEX, 1, color, 0.5, cv::LINE_AA);
             }
         }
     }
@@ -54,7 +66,7 @@ void ImageLabel::drawDetection(cv::Mat &img)
 void ImageLabel::drawLabels()
 {
     cv::Mat img = getCurrentImage().clone();
-    if (img.empty() || !is_labeling_)
+    if (img.empty()) // 此处删除了关于labelMode_的检查
     {
         return;
     }
@@ -136,10 +148,7 @@ void ImageLabel::mousePressEvent(QMouseEvent *event)
             label.is_selected = true;
             labelSelected = true;
 
-            if (labelMode_ == "cls")
-            {
-                emit onLabelSelected(label);
-            }
+            emit onLabelSelected(label);
 
             QString message = tr("标签模式: 选中标签 '%1'").arg(QString::fromStdString(label.name));
             emit statusMessageUpdate(message);
@@ -199,6 +208,12 @@ void ImageLabel::mouseReleaseEvent(QMouseEvent *event)
         // 记录标签
         tmpLabel.rect = cv::Rect(firstPoint, lastPoint);
 
+        if (tmpLabel.rect.area() < 100)
+        {
+            tmpLabel.rect = cv::Rect();
+            emit statusMessageUpdate("标签创建失败: 标签面积太小");
+        }
+
         firstPoint = cv::Point(0, 0);
         is_drawing = false;
 
@@ -229,6 +244,11 @@ void ImageLabel::keyPressEvent(QKeyEvent *event)
             {
                 it = detectionLabels_.erase(it);
                 drawLabels();
+
+                if (labelMode_ == "detection")
+                {
+                    leftPartInstance->detectionInstance->updateLabelList();
+                }
             }
             else
             {

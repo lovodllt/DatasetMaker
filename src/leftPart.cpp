@@ -1,12 +1,13 @@
 #include "leftPart.h"
 #include "cls.h"
+#include "detection.h"
 #include "ui_leftPart.h"
 
 leftPart::leftPart(QWidget *parent) :
     QWidget(parent),
-    ui(new Ui::leftPart)
+    ui(new Ui::leftPart),
+    autoModeInstance(std::make_unique<autoMode>())
 {
-    autoModeInstance = new autoMode();
     ui->setupUi(this);
     imageArea = ui->imageArea;
 
@@ -43,7 +44,6 @@ leftPart::leftPart(QWidget *parent) :
 
 leftPart::~leftPart()
 {
-    delete autoModeInstance;
     delete ui;
 }
 
@@ -90,23 +90,31 @@ void leftPart::saveFilePath()
         QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
     );
 
-    if (!savePath_.isEmpty())
+    if (!savePath_.isEmpty() && labelMode_ == "cls")
     {
-        markProcessedImages(savePath_);
+        loadClsLabel(savePath_);
 
         QString message = tr("保存路径: %1 | 格式: %2").arg(savePath_).arg(saveFormat_);
         emit statusMessageUpdate(message);
     }
+    else if (!savePath_.isEmpty() && labelMode_ == "detection")
+    {
+        loadDetectionLabel(savePath_ + "/labels");
+
+        QString message = tr("保存路径: %1 | 格式: %2").arg(savePath_ + "/labels").arg(saveFormat_);
+        emit statusMessageUpdate(message);
+    }
 }
 
-// 标记已处理的图像
-void leftPart::markProcessedImages(const QString &savePath)
+// 标记已处理的图像(cls)
+void leftPart::loadClsLabel(const QString &savePath)
 {
     QDir saveDir(savePath);
     if (!saveDir.exists()) return;
 
     // 获取保存目录下的所有文件名
     QStringList savedFiles;
+    // 递归遍历所有内容以及子目录
     QDirIterator it(savePath, QDir::Files, QDirIterator::Subdirectories);
     while (it.hasNext())
     {
@@ -133,6 +141,103 @@ void leftPart::markProcessedImages(const QString &savePath)
             is_images_processed[imageFiles[i].absoluteFilePath()] = true;
             ui->imageList->item(i)->setCheckState(Qt::Checked);
         }
+    }
+}
+
+// 标记已处理的图像(detection)
+void leftPart::loadDetectionLabel(const QString &savePath)
+{
+    QDir saveDir(savePath);
+    if (!saveDir.exists()) return;
+
+    QStringList savedFiles;
+    // 遍历.txt结尾的文件（不包含文件夹）
+    QDirIterator it(savePath, QStringList() << "*.txt", QDir::Files);
+    while (it.hasNext())
+    {
+        savedFiles << it.next();
+    }
+
+    for (int i = 0; i < imageFiles.size(); i++)
+    {
+        QString originalFileName = imageFiles[i].baseName();
+        bool is_processed = false;
+
+        for (const auto &savedFile : savedFiles)
+        {
+            if (savedFile.contains(originalFileName))
+            {
+                is_processed = true;
+                break;
+            }
+        }
+
+        if (is_processed)
+        {
+            is_images_processed[imageFiles[i].absoluteFilePath()] = true;
+            ui->imageList->item(i)->setCheckState(Qt::Checked);
+        }
+    }
+}
+
+void leftPart::loadDetectionLabelOnImage(const QString &imagePath)
+{
+    QFileInfo fileInfo(imagePath);
+    QString originalFileName = fileInfo.baseName();
+    QString labelsPath = savePath_ + "/labels/" + originalFileName + ".txt";
+
+    QFile file(labelsPath);
+    if (!file.exists()) return;
+
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        QTextStream in(&file);
+        while (!in.atEnd())
+        {
+            QString line = in.readLine();
+            QStringList values = line.split(' ', QString::SkipEmptyParts);
+            if (values.size() < 5)
+                continue;
+
+            int classId = values[0].toInt();
+            double cx = values[1].toDouble();
+            double cy = values[2].toDouble();
+            double width = values[3].toDouble();
+            double height = values[4].toDouble();
+
+            // 转换为绝对坐标
+            int imgWidth = imageLabel->originalImg.cols;
+            int imgHeight = imageLabel->originalImg.rows;
+            int x = (cx - width / 2.0) * imgWidth;
+            int y = (cy - height / 2.0) * imgHeight;
+            int w = width * imgWidth;
+            int h = height * imgHeight;
+
+            detectionLabel label;
+            label.rect = cv::Rect(x, y, w, h);
+            label.is_saved = true;
+            label.confidence = 1.0;
+
+            if (colorSave_)
+            {
+                if (classId == 0)
+                {
+                    label.color = "red";
+                }
+                else if (classId == 1)
+                {
+                    label.color = "blue";
+                }
+            }
+            else
+            {
+                label.color = "";
+            }
+
+            detectionLabels_.push_back(label);
+        }
+
+        file.close();
     }
 }
 
@@ -195,6 +300,11 @@ void leftPart::on_createLabel_clicked()
             "    background: #d0d0d0;"
             "}"
             );
+
+        if (autoMode_)
+        {
+            displayImage(getCurrentImagePath());
+        }
     }
     else
     {
@@ -255,6 +365,8 @@ void leftPart::on_save_clicked()
     {
         saveFilePath();
     }
+
+    saveCurrentLabels();
 }
 
 void leftPart::on_deleteFile_clicked()
@@ -302,6 +414,11 @@ void leftPart::on_deleteFile_clicked()
             }
         }
     }
+
+    // 清除所有临时状态
+    imageLabel->clearLabels();
+    finalArmors_.clear();
+    detectionLabels_.clear();
 }
 
 // 创建图像文件条目
@@ -408,6 +525,14 @@ void leftPart::displayImage(const QString &imagePath)
              << "| Labeling:" << is_labeling_
              << "| Image valid:" << !imageLabel->originalImg.empty();
 
+    if (labelMode_ == "detection" && detectionInstance && !savePath_.isEmpty())
+    {
+        loadDetectionLabelOnImage(imagePath);
+        detectionInstance->updateLabelList();
+        imageLabel->drawLabels();
+        imageLabel->update();
+    }
+
     // 自动标注
     if (autoMode_ && !is_images_processed[imagePath] && is_labeling_ && detectionLabels_.empty())
     {
@@ -420,10 +545,6 @@ void leftPart::displayImage(const QString &imagePath)
             imageLabel->update();
 
             emit statusMessageUpdate("图片自动标注完成");
-        }
-        else
-        {
-            std::cerr << "Error: Image is empty!" << std::endl;
         }
     }
 }
@@ -537,6 +658,10 @@ bool leftPart::saveCurrentLabels()
             {
                 clsInstance->saveClsLabels();
             }
+            else if (labelMode_ == "detection")
+            {
+                detectionInstance->saveDetectionLabels();
+            }
 
             ui->imageList->item(currentIndex)->setCheckState(Qt::Checked);
         }
@@ -549,7 +674,11 @@ void leftPart::forwardOnLabelSelected(detectionLabel label)
 {
     if (labelMode_ == "cls" && clsInstance)
     {
-        clsInstance->onLabelSelected(label);
+        clsInstance->onClsLabelSelected(label);
+    }
+    else if (labelMode_ == "detection" && detectionInstance)
+    {
+        detectionInstance->onDetectionLabelSelected(label);
     }
 }
 

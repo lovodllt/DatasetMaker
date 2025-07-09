@@ -2,6 +2,7 @@
 #define COMMON_H
 #pragma once
 
+#include <memory>
 #include <iostream>
 #include <QString>
 #include <vector>
@@ -16,8 +17,10 @@ struct detectionLabel
     std::string name;
     cv::Rect rect;
     cv::Mat warp;
+    std::string color;
     bool is_selected = false;
     bool is_saved = false;
+    double confidence;
 };
 
 struct finalArmor
@@ -44,9 +47,11 @@ extern int saveId_;
 extern bool autoMode_;
 extern std::string modelSelection_;
 extern bool is_warp_;
+extern bool is_binary_;
 extern const std::string v8_model_path_;
 extern const std::string v12_model_path_;
 extern const std::string cls_model_path_;
+extern bool colorSave_;
 
 std::string getModelPath(const std::string modelPath);
 
