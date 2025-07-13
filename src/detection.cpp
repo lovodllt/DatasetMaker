@@ -209,7 +209,7 @@ void detection::on_labelList_itemClicked(QListWidgetItem *item)
 {
     int index = ui->labelList->row(item);
 
-    if (index < 0 || index >= detectionLabels_.size())
+    if (index < 0 || index >= detectionLabels_.size() || currentLabelClickedId == index)
     {
         return;
     }
@@ -225,6 +225,7 @@ void detection::on_labelList_itemClicked(QListWidgetItem *item)
     }
 
     detectionLabels_[index].is_selected = true;
+    currentLabelClickedId = index;
     leftPartInstance->imageLabel->drawLabels();
     onDetectionLabelSelected(detectionLabels_[index]);
 

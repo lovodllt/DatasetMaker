@@ -64,6 +64,10 @@ BUG：
 4.detection保存的标签文件宽高为0
 5.读取保存文件的逻辑有隐患（leftPart-loadLabel）
 
+2025.7.13
+1.刚修好电脑
+2.解决了双击detection标签条目会闪退的问题
+
 
 
 

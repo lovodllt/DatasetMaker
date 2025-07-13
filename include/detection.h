@@ -41,6 +41,7 @@ private:
     QButtonGroup *colorSelection;
 
     std::string currentColor{};
+    int currentLabelClickedId{};
 };
 
 #endif // DETECTION_H
