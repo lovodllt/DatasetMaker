@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>900</width>
-    <height>798</height>
+    <height>830</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -554,7 +554,7 @@ QPushButton:pressed {
               </rect>
              </property>
              <property name="text">
-              <string>启用自动裁剪(会根据你自定义的宽高自动改变图像大小)</string>
+              <string>自动裁剪</string>
              </property>
             </widget>
            </widget>

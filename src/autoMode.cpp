@@ -634,11 +634,11 @@ void autoMode::update(cv::Mat &img)
 
         if (is_warp_)
         {
-            label.warp = armor.warp;
+            cvtColor(armor.warp, label.warp, cv::COLOR_BGR2RGB);
         }
         else
         {
-            label.warp = img(label.rect);
+            cvtColor(img(label.rect), label.warp, cv::COLOR_BGR2RGB);
         }
 
         if (is_binary_)

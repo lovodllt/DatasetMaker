@@ -172,6 +172,8 @@
     </widget>
     <addaction name="openFile"/>
     <addaction name="separator"/>
+    <addaction name="selectSavePath"/>
+    <addaction name="separator"/>
     <addaction name="saveMode"/>
     <addaction name="separator"/>
     <addaction name="exit"/>
@@ -188,7 +190,7 @@
     <property name="title">
      <string>帮助</string>
     </property>
-    <addaction name="action"/>
+    <addaction name="shortCut"/>
    </widget>
    <addaction name="file"/>
    <addaction name="mode"/>
@@ -225,9 +227,9 @@
     <string>退出</string>
    </property>
   </action>
-  <action name="action">
+  <action name="shortCut">
    <property name="text">
-    <string>关于</string>
+    <string>快捷键</string>
    </property>
   </action>
   <action name="yolo">
@@ -238,6 +240,16 @@
   <action name="openLabel">
    <property name="text">
     <string>打开标签文件</string>
+   </property>
+  </action>
+  <action name="autoSave">
+   <property name="text">
+    <string>自动保存</string>
+   </property>
+  </action>
+  <action name="selectSavePath">
+   <property name="text">
+    <string>保存路径</string>
    </property>
   </action>
  </widget>

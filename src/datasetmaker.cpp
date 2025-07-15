@@ -46,6 +46,11 @@ void DatasetMaker::on_openFile_triggered()
     leftWidget()->openFile();
 }
 
+void DatasetMaker::on_selectSavePath_triggered()
+{
+    leftWidget()->saveFilePath();
+}
+
 // 文件保存格式
 void DatasetMaker::on_yolo_triggered()
 {
@@ -69,6 +74,13 @@ void DatasetMaker::on_exit_triggered()
 void DatasetMaker::on_clsMode_triggered()
 {
     labelMode_ = "cls";
+
+    leftWidget()->imageLabel->tmpLabel = detectionLabel();
+    detectionLabels_.clear();
+
+    leftWidget()->loadClsLabel(savePath_);
+    leftWidget()->imageLabel->drawLabels();
+
     ui->rightStack->setCurrentWidget(clsWidget());
     ui->statusBar->showMessage("切换到图像分类模式");
 }
@@ -77,8 +89,21 @@ void DatasetMaker::on_clsMode_triggered()
 void DatasetMaker::on_detectionMode_triggered()
 {
     labelMode_ = "detection";
+
+    leftWidget()->imageLabel->tmpLabel = detectionLabel();
+    detectionLabels_.clear();
+
+    leftWidget()->loadDetectionLabel(savePath_ + "/labels");
+    leftWidget()->imageLabel->drawLabels();
+
     ui->rightStack->setCurrentWidget(detectionWidget());
     ui->statusBar->showMessage("切换到装甲板目标检测模式");
+}
+
+// 菜单栏快捷键
+void DatasetMaker::on_shortCut_triggered()
+{
+
 }
 
 // 状态栏更新

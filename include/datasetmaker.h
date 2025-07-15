@@ -24,10 +24,13 @@ public:
 
 private slots:
     void on_openFile_triggered();
+    void on_selectSavePath_triggered();
     void on_yolo_triggered();
     void on_exit_triggered();
     void on_clsMode_triggered();
     void on_detectionMode_triggered();
+    void on_shortCut_triggered();
+
     void statusMessageUpdate(const QString &message);
 
 private:

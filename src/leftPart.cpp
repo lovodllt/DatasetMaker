@@ -338,6 +338,7 @@ void leftPart::on_createLabel_clicked()
         }
 
         imageLabel->clearLabels();
+        imageLabel->drawLabels();
 
         is_labeling_ = false;
         emit statusMessageUpdate("退出标签模式");

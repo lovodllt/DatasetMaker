@@ -182,7 +182,7 @@ void detection::updateLabelList()
                               .arg(label.rect.y)
                               .arg(label.rect.width)
                               .arg(label.rect.height)
-                              .arg(label.confidence)
+                              .arg(QString::number(label.confidence, 'f', 2))
                               .arg(QString::fromStdString(label.color));
 
         if (!colorSave_)

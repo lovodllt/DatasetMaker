@@ -26,26 +26,30 @@ void ImageLabel::drawDetection(cv::Mat &img)
     {
         for (const auto &label : detectionLabels_)
         {
+            // 动态颜色和线宽
             cv::Scalar color = label.is_selected ? cv::Scalar(255, 0, 0) : cv::Scalar(0, 0, 255);
             int thickness = label.is_selected? 2 : 1;
 
             rectangle(img, label.rect, color, thickness, cv::LINE_AA);
 
+            // 动态字体大小
+            double fontScale = std::max(0.5, std::min(1.0, 0.005 * label.rect.area()));
+
             if (labelMode_ == "cls")
             {
-                putText(img, label.name, label.rect.tl(), cv::FONT_HERSHEY_SIMPLEX, 1, color, 0.5, cv::LINE_AA);
+                putText(img, label.name, label.rect.tl(), cv::FONT_HERSHEY_SIMPLEX, fontScale, color, 0.5, cv::LINE_AA);
             }
             else if (labelMode_ == "detection")
             {
                 if (colorSave_)
                 {
-                    putText(img, label.color, label.rect.tl(), cv::FONT_HERSHEY_SIMPLEX, 1, color, 0.5, cv::LINE_AA);
+                    putText(img, label.color, label.rect.tl(), cv::FONT_HERSHEY_SIMPLEX, fontScale, color, 0.5, cv::LINE_AA);
                 }
             }
 
             if (autoMode_ && label.confidence > confidence_threshold_)
             {
-                putText(img, QString::number(label.confidence, 'f', 2).toStdString(), cv::Point(label.rect.x + 60, label.rect.y), cv::FONT_HERSHEY_SIMPLEX, 1, color, 0.5, cv::LINE_AA);
+                putText(img, QString::number(label.confidence, 'f', 2).toStdString(), cv::Point(label.rect.x + 60, label.rect.y), cv::FONT_HERSHEY_SIMPLEX, fontScale, color, 0.5, cv::LINE_AA);
             }
         }
     }
@@ -66,7 +70,7 @@ void ImageLabel::drawDetection(cv::Mat &img)
 void ImageLabel::drawLabels()
 {
     cv::Mat img = getCurrentImage().clone();
-    if (img.empty()) // 此处删除了关于labelMode_的检查
+    if (img.empty())
     {
         return;
     }
@@ -133,6 +137,7 @@ void ImageLabel::mousePressEvent(QMouseEvent *event)
     int originalY = static_cast<int>(viewportMousePos.y() / currentScale);
     cv::Point clickPoint = cv::Point(originalX, originalY);
 
+    // 选中标签
     for (auto &label : detectionLabels_)
     {
         if (selectLabel(clickPoint, label))
@@ -156,11 +161,13 @@ void ImageLabel::mousePressEvent(QMouseEvent *event)
         }
     }
 
+    // 选中标签时更新图像
     if (labelSelected)
     {
         drawLabels();
     }
 
+    // 绘制临时标签
     if (event->button() == Qt::LeftButton && firstPoint == cv::Point(0, 0) && tmpLabel.rect.empty())
     {
         firstPoint = clickPoint;
@@ -217,6 +224,11 @@ void ImageLabel::mouseReleaseEvent(QMouseEvent *event)
         firstPoint = cv::Point(0, 0);
         is_drawing = false;
 
+        for (auto &label : detectionLabels_)
+        {
+            label.is_selected = false;
+        }
+
         drawLabels();
 
         QString message = tr("标签模式: 标签创建成功");
@@ -236,24 +248,32 @@ void ImageLabel::keyPressEvent(QKeyEvent *event)
         clearLabels();
         drawLabels();
     }
-    else if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace && labelSelected)
+    else if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace)
     {
-        for (auto it = detectionLabels_.begin(); it != detectionLabels_.end();)
+        if (labelSelected)
         {
-            if (it->is_selected)
+            for (auto it = detectionLabels_.begin(); it != detectionLabels_.end();)
             {
-                it = detectionLabels_.erase(it);
-                drawLabels();
-
-                if (labelMode_ == "detection")
+                if (it->is_selected)
                 {
-                    leftPartInstance->detectionInstance->updateLabelList();
+                    it = detectionLabels_.erase(it);
+                    drawLabels();
+
+                    if (labelMode_ == "detection")
+                    {
+                        leftPartInstance->detectionInstance->updateLabelList();
+                    }
+                }
+                else
+                {
+                    ++it;
                 }
             }
-            else
-            {
-                ++it;
-            }
+        }
+        else if (!tmpLabel.rect.empty())
+        {
+            tmpLabel = detectionLabel();
+            drawLabels();
         }
     }
     else

@@ -393,6 +393,9 @@ QPushButton:pressed {
                <string>💾 
 保存</string>
               </property>
+              <property name="shortcut">
+               <string>Ctrl+S</string>
+              </property>
               <property name="flat">
                <bool>true</bool>
               </property>
