@@ -3,7 +3,6 @@
 #pragma once
 
 #include <QListWidgetItem>
-#include <QMap>
 #include <QSize>
 #include <QPixmap>
 #include <QScrollArea>
@@ -18,6 +17,7 @@ const double zoomFactor = 1.1;
 
 class cls;
 class detection;
+class armorPose;
 
 class leftPart : public QWidget
 {
@@ -31,7 +31,7 @@ public:
     void processDirectory(const QString& dirPath);
     void displayImage(const QString &imagePath);
     void setCurrentImage(int index);
-    void populateImageList(const QFileInfoList &imageFiles, QMap<QString, bool> &is_images_processed);
+    void populateImageList(const QFileInfoList &imageFiles);
     void saveFilePath();
     QString getCurrentImagePath();
     bool saveCurrentLabels();
@@ -60,12 +60,12 @@ private:
     Ui::leftPart *ui;
     QScrollArea *imageArea;                    // 滚动区域
     QFileInfoList imageFiles;                  // 存储图片信息
-    QMap<QString, bool> is_images_processed;   // 是否处理了图像
 
 public:
     ImageLabel *imageLabel;
     cls *clsInstance;
     detection *detectionInstance;
+    armorPose *armorPoseInstance;
     std::unique_ptr<autoMode> autoModeInstance;
 
     int currentIndex = -1;                     // 当前显示的图片索引

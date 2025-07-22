@@ -16,6 +16,7 @@ public:
     explicit ImageLabel(QWidget *parent = nullptr);
     cv::Mat getCurrentImage();
     void drawDetection(cv::Mat &img);
+    void drawPose(cv::Mat &img);
     void drawLabels();
     void clearLabels();
     bool selectLabel(const cv::Point &point, const detectionLabel &label);
@@ -33,7 +34,6 @@ protected:
 
 private:
     bool is_drawing;
-
     cv::Point firstPoint;
     cv::Point currentPoint;
 
@@ -44,6 +44,7 @@ public:
     double currentScale;
     detectionLabel tmpLabel;
     bool labelSelected = false;
+    std::vector<cv::Point> posePoints;
 };
 
 #endif // LABELPAINTER_H

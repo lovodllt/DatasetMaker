@@ -42,10 +42,6 @@ add_executable(${PROJECT_NAME}
         ${SOURCES}
         ${HEADERS}
         ${UI_HEADERS}
-        include/common.h
-        src/common.cpp
-        src/autoMode.cpp
-        include/autoMode.h
 )
 
 # 链接 Qt 库

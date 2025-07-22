@@ -18,6 +18,8 @@ public:
 
     void updateLabelList();
     void saveDetectionLabels();
+    void makePoseLabel(std::vector<cv::Point> &posePoints);
+    void displayPreview(cv::Mat img);
 
 public slots:
     void on_autoMode_toggled(bool checked);
@@ -26,7 +28,14 @@ public slots:
     void on_nmsEdit_textChanged(const QString &text);
     void on_modelSelection_currentTextChanged(const QString &text);
     void on_colorSave_toggled(bool checked);
+    void on_poseMode_toggled(bool checked);
     void on_createLabel_clicked();
+
+    void on_labelSave_toggled(bool checked);
+    void on_warp_toggled(bool checked);
+    void on_binary_toggled(bool checked);
+    void on_labelSelection_currentTextChanged(const QString &text);
+    void on_saveWH_clicked();
 
     void onColorSelected(QAbstractButton *button);
     void on_labelList_itemClicked(QListWidgetItem *item);
@@ -42,6 +51,8 @@ private:
 
     std::string currentColor{};
     int currentLabelClickedId{};
+    std::string labelId;
+    int width, height;
 };
 
 #endif // DETECTION_H

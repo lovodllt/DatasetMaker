@@ -5,6 +5,7 @@
 ImageLabel::ImageLabel(QWidget *parent) : QLabel(parent)
 {
     setFocusPolicy(Qt::StrongFocus);
+    setMouseTracking(true);
 }
 
 cv::Mat ImageLabel::getCurrentImage()
@@ -21,41 +22,8 @@ cv::Mat ImageLabel::getCurrentImage()
 
 void ImageLabel::drawDetection(cv::Mat &img)
 {
-    // 绘制已有标签
-    if (!detectionLabels_.empty())
-    {
-        for (const auto &label : detectionLabels_)
-        {
-            // 动态颜色和线宽
-            cv::Scalar color = label.is_selected ? cv::Scalar(255, 0, 0) : cv::Scalar(0, 0, 255);
-            int thickness = label.is_selected? 2 : 1;
-
-            rectangle(img, label.rect, color, thickness, cv::LINE_AA);
-
-            // 动态字体大小
-            double fontScale = std::max(0.5, std::min(1.0, 0.005 * label.rect.area()));
-
-            if (labelMode_ == "cls")
-            {
-                putText(img, label.name, label.rect.tl(), cv::FONT_HERSHEY_SIMPLEX, fontScale, color, 0.5, cv::LINE_AA);
-            }
-            else if (labelMode_ == "detection")
-            {
-                if (colorSave_)
-                {
-                    putText(img, label.color, label.rect.tl(), cv::FONT_HERSHEY_SIMPLEX, fontScale, color, 0.5, cv::LINE_AA);
-                }
-            }
-
-            if (autoMode_ && label.confidence > confidence_threshold_)
-            {
-                putText(img, QString::number(label.confidence, 'f', 2).toStdString(), cv::Point(label.rect.x + 60, label.rect.y), cv::FONT_HERSHEY_SIMPLEX, fontScale, color, 0.5, cv::LINE_AA);
-            }
-        }
-    }
-
     // 绘制临时标签
-    if (!tmpLabel.rect.empty())
+    if (!tmpLabel.rect.empty() && !is_poseMode_)
     {
         rectangle(img, tmpLabel.rect, cv::Scalar(0, 255, 0), 1, cv::LINE_AA);
     }
@@ -64,6 +32,27 @@ void ImageLabel::drawDetection(cv::Mat &img)
     if (is_drawing && firstPoint != cv::Point(0, 0))
     {
         rectangle(img, cv::Rect(firstPoint, currentPoint), cv::Scalar(0, 255, 0), 1, cv::LINE_AA);
+    }
+}
+
+void ImageLabel::drawPose(cv::Mat &img)
+{
+    // 绘制确定点
+    for (auto &posePoint : posePoints)
+    {
+        circle(img, posePoint, 10, cv::Scalar(0, 255, 0), -1);
+    }
+
+    // 绘制已确定线段
+    for (int i = 1; i < posePoints.size(); i++)
+    {
+        line(img, posePoints[i - 1], posePoints[i], cv::Scalar(0, 255, 0), 1, cv::LINE_AA);
+    }
+
+    // 绘制动态线段
+    if (!posePoints.empty() && currentPoint != cv::Point(0, 0))
+    {
+        line(img, posePoints.back(), currentPoint, cv::Scalar(0, 255, 0), 1, cv::LINE_AA);
     }
 }
 
@@ -79,7 +68,57 @@ void ImageLabel::drawLabels()
 
     if (labelMode_ == "cls" || labelMode_ == "detection")
     {
-        drawDetection(img);
+        // 绘制已有标签
+        if (!detectionLabels_.empty() && is_labeling_)
+        {
+            for (const auto &label : detectionLabels_)
+            {
+                // 动态颜色和线宽
+                cv::Scalar color = label.is_selected ? cv::Scalar(255, 0, 0) : cv::Scalar(0, 0, 255);
+                int thickness = label.is_selected? 2 : 1;
+
+                if (!label.is_pose)
+                {
+                    rectangle(img, label.rect, color, thickness, cv::LINE_AA);
+                }
+                else
+                {
+                    for (int i = 0; i < 4; i++)
+                    {
+                        line(img, label.armor_points[i], label.armor_points[(i + 1) % 4], color, thickness, cv::LINE_AA);
+                    }
+                }
+
+                // 动态字体大小
+                double fontScale = std::max(0.5, std::min(1.0, 0.005 * label.rect.area()));
+
+                if (labelMode_ == "cls")
+                {
+                    putText(img, label.name, label.rect.tl(), cv::FONT_HERSHEY_SIMPLEX, fontScale, color, 0.5, cv::LINE_AA);
+                }
+                else if (labelMode_ == "detection")
+                {
+                    if (colorSave_)
+                    {
+                        putText(img, label.color, label.rect.tl(), cv::FONT_HERSHEY_SIMPLEX, fontScale, color, 0.5, cv::LINE_AA);
+                    }
+                }
+
+                if (autoMode_ && label.confidence > confidence_threshold_)
+                {
+                    putText(img, QString::number(label.confidence, 'f', 2).toStdString(), cv::Point(label.rect.x + 60, label.rect.y), cv::FONT_HERSHEY_SIMPLEX, fontScale, color, 0.5, cv::LINE_AA);
+                }
+            }
+        }
+
+        if (is_poseMode_)
+        {
+            drawPose(img);
+        }
+        else
+        {
+            drawDetection(img);
+        }
     }
 
     cv::Mat displayImg;
@@ -138,26 +177,31 @@ void ImageLabel::mousePressEvent(QMouseEvent *event)
     cv::Point clickPoint = cv::Point(originalX, originalY);
 
     // 选中标签
-    for (auto &label : detectionLabels_)
+    if (tmpLabel.rect.empty())
     {
-        if (selectLabel(clickPoint, label))
+        for (auto &label : detectionLabels_)
         {
-            firstPoint = cv::Point(0, 0);
-            is_drawing = false;
-
-            for (auto &otherLabel : detectionLabels_)
+            if (selectLabel(clickPoint, label))
             {
-                otherLabel.is_selected = false;
+                firstPoint = cv::Point(0, 0);
+                is_drawing = false;
+
+                for (auto &label : detectionLabels_)
+                {
+                    label.is_selected = false;
+                }
+
+                label.is_selected = true;
+                labelSelected = true;
+
+                emit onLabelSelected(label);
+
+                QString message = tr("标签模式: 选中标签 '%1'").arg(QString::fromStdString(label.name));
+                emit statusMessageUpdate(message);
+                break;
             }
 
-            label.is_selected = true;
-            labelSelected = true;
-
-            emit onLabelSelected(label);
-
-            QString message = tr("标签模式: 选中标签 '%1'").arg(QString::fromStdString(label.name));
-            emit statusMessageUpdate(message);
-            break;
+            labelSelected = false;
         }
     }
 
@@ -166,15 +210,45 @@ void ImageLabel::mousePressEvent(QMouseEvent *event)
     {
         drawLabels();
     }
+    // 未选中且pose模式开始绘制点
+    else if (is_poseMode_)
+    {
+        if (!posePoints.empty())
+        {
+            is_drawing = false;
 
-    // 绘制临时标签
-    if (event->button() == Qt::LeftButton && firstPoint == cv::Point(0, 0) && tmpLabel.rect.empty())
+            double dx = posePoints[posePoints.size() - 1].x - clickPoint.x;
+            double dy = posePoints[posePoints.size() - 1].y - clickPoint.y;
+            double distance = std::sqrt(dx * dx + dy * dy);
+
+            if (distance < 20)
+            {
+                emit statusMessageUpdate("定点失败: 距离过近");
+                return;
+            }
+        }
+
+        posePoints.push_back(clickPoint);
+
+        QString message = tr("已标记 %1 个点").arg(posePoints.size());
+        emit statusMessageUpdate(message);
+
+        if (posePoints.size() == 4)
+        {
+            leftPartInstance->detectionInstance->makePoseLabel(posePoints);
+
+            posePoints.clear();
+        }
+
+        drawLabels();
+    }
+    // 未选中时开始绘制临时标签
+    else if (tmpLabel.rect.empty())
     {
         firstPoint = clickPoint;
         is_drawing = true;
 
-        QString message = tr("标签模式: 松开鼠标确定标签");
-        emit statusMessageUpdate(message);
+        emit statusMessageUpdate("标签模式: 松开鼠标确定临时标签");
     }
     else
     {
@@ -185,13 +259,13 @@ void ImageLabel::mousePressEvent(QMouseEvent *event)
 // 移动事件
 void ImageLabel::mouseMoveEvent(QMouseEvent *event)
 {
-    if (is_drawing)
-    {
-        QPoint viewportMousePos = event->pos();
-        int originalX = static_cast<int>(viewportMousePos.x() / currentScale);
-        int originalY = static_cast<int>(viewportMousePos.y() / currentScale);
-        currentPoint = cv::Point(originalX, originalY);
+    QPoint viewportMousePos = event->pos();
+    int originalX = static_cast<int>(viewportMousePos.x() / currentScale);
+    int originalY = static_cast<int>(viewportMousePos.y() / currentScale);
+    currentPoint = cv::Point(originalX, originalY);
 
+    if (is_drawing || !posePoints.empty())
+    {
         drawLabels();
     }
     else
@@ -203,15 +277,15 @@ void ImageLabel::mouseMoveEvent(QMouseEvent *event)
 // 释放事件
 void ImageLabel::mouseReleaseEvent(QMouseEvent *event)
 {
+    QPoint viewportMousePos = event->pos();
+
+    // 计算原始图像坐标
+    int originalX = static_cast<int>(viewportMousePos.x() / currentScale);
+    int originalY = static_cast<int>(viewportMousePos.y() / currentScale);
+    cv::Point lastPoint = cv::Point(originalX, originalY);
+
     if (event->button() == Qt::LeftButton && is_drawing && firstPoint != cv::Point(0, 0) && tmpLabel.rect.empty())
     {
-        QPoint viewportMousePos = event->pos();
-
-        // 计算原始图像坐标
-        int originalX = static_cast<int>(viewportMousePos.x() / currentScale);
-        int originalY = static_cast<int>(viewportMousePos.y() / currentScale);
-        cv::Point lastPoint = cv::Point(originalX, originalY);
-
         // 记录标签
         tmpLabel.rect = cv::Rect(firstPoint, lastPoint);
 
@@ -243,32 +317,33 @@ void ImageLabel::mouseReleaseEvent(QMouseEvent *event)
 // 键盘事件重写
 void ImageLabel::keyPressEvent(QKeyEvent *event)
 {
-    if (event->key() == Qt::Key_Escape && is_drawing)
+    if (event->key() == Qt::Key_Escape && (is_drawing || !posePoints.empty()))
     {
-        clearLabels();
+        firstPoint = cv::Point(0, 0);
+        tmpLabel = detectionLabel();
+        posePoints.clear();
         drawLabels();
     }
     else if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace)
     {
         if (labelSelected)
         {
-            for (auto it = detectionLabels_.begin(); it != detectionLabels_.end();)
-            {
-                if (it->is_selected)
-                {
-                    it = detectionLabels_.erase(it);
-                    drawLabels();
+            auto index = std::remove_if(detectionLabels_.begin(), detectionLabels_.end(), [](const detectionLabel &label) {
+                return label.is_selected;
+            });
 
-                    if (labelMode_ == "detection")
-                    {
-                        leftPartInstance->detectionInstance->updateLabelList();
-                    }
-                }
-                else
-                {
-                    ++it;
-                }
+            if (index != detectionLabels_.end())
+            {
+                detectionLabels_.erase(index, detectionLabels_.end());
+                drawLabels();
             }
+
+            if (labelMode_ == "detection")
+            {
+                leftPartInstance->detectionInstance->updateLabelList();
+            }
+
+            labelSelected = false;
         }
         else if (!tmpLabel.rect.empty())
         {
@@ -286,8 +361,10 @@ void ImageLabel::keyPressEvent(QKeyEvent *event)
 void ImageLabel::clearLabels()
 {
     firstPoint = cv::Point(0, 0);
-    currentPoint = cv::Point(0, 0);
     tmpLabel = detectionLabel();
+    posePoints.clear();
+
+    labelSelected = false;
 
     for (auto &label : detectionLabels_)
     {

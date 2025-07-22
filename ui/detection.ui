@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>717</width>
-    <height>513</height>
+    <height>739</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -22,63 +22,6 @@
      <layout class="QGridLayout" name="gridLayout_3">
       <item row="0" column="0">
        <layout class="QGridLayout" name="gridLayout">
-        <item row="5" column="1">
-         <widget class="QLineEdit" name="confidenceEdit">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>100</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>0.5</string>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="2">
-         <widget class="QLabel" name="label_2">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>100</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>nms</string>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="0">
-         <widget class="QLabel" name="label">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>100</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>置信度</string>
-          </property>
-         </widget>
-        </item>
         <item row="3" column="0">
          <widget class="QLabel" name="modeLabel">
           <property name="sizePolicy">
@@ -95,6 +38,22 @@
           </property>
           <property name="text">
            <string>[模型选择] </string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QCheckBox" name="autoMode">
+          <property name="minimumSize">
+           <size>
+            <width>100</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>auto Mode</string>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
           </property>
          </widget>
         </item>
@@ -117,8 +76,28 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="0">
-         <widget class="QCheckBox" name="autoMode">
+        <item row="3" column="1">
+         <widget class="QComboBox" name="ModeSelection">
+          <item>
+           <property name="text">
+            <string>yolov8</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>yolov12</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="5" column="0">
+         <widget class="QLabel" name="label">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="minimumSize">
            <size>
             <width>100</width>
@@ -126,10 +105,45 @@
            </size>
           </property>
           <property name="text">
-           <string>auto Mode</string>
+           <string>置信度</string>
           </property>
-          <property name="checked">
-           <bool>false</bool>
+         </widget>
+        </item>
+        <item row="5" column="2">
+         <widget class="QLabel" name="label_2">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>100</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>nms</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="1">
+         <widget class="QLineEdit" name="confidenceEdit">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>100</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>0.5</string>
           </property>
          </widget>
         </item>
@@ -145,20 +159,6 @@
            </size>
           </property>
          </spacer>
-        </item>
-        <item row="3" column="1">
-         <widget class="QComboBox" name="ModeSelection">
-          <item>
-           <property name="text">
-            <string>yolov8</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>yolov12</string>
-           </property>
-          </item>
-         </widget>
         </item>
         <item row="2" column="1">
          <widget class="QPushButton" name="inferAgain">
@@ -180,6 +180,13 @@ QPushButton:pressed {
           </property>
          </widget>
         </item>
+        <item row="2" column="2">
+         <widget class="QCheckBox" name="poseMode">
+          <property name="text">
+           <string>pose Mode</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
      </layout>
@@ -193,41 +200,8 @@ QPushButton:pressed {
      <layout class="QGridLayout" name="gridLayout_5">
       <item row="0" column="0">
        <layout class="QGridLayout" name="gridLayout_4">
-        <item row="0" column="0">
-         <widget class="QLabel" name="targetColor">
-          <property name="text">
-           <string>[目标颜色]  </string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QRadioButton" name="red">
-          <property name="text">
-           <string>red</string>
-          </property>
-          <property name="shortcut">
-           <string>1</string>
-          </property>
-          <attribute name="buttonGroup">
-           <string notr="true">colorSelection</string>
-          </attribute>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QRadioButton" name="blue">
-          <property name="text">
-           <string>blue</string>
-          </property>
-          <property name="shortcut">
-           <string>2</string>
-          </property>
-          <attribute name="buttonGroup">
-           <string notr="true">colorSelection</string>
-          </attribute>
-         </widget>
-        </item>
-        <item row="1" column="2">
-         <spacer name="horizontalSpacer_2">
+        <item row="0" column="2">
+         <spacer name="horizontalSpacer_3">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
@@ -239,10 +213,168 @@ QPushButton:pressed {
           </property>
          </spacer>
         </item>
+        <item row="0" column="3" colspan="2">
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>[保存标签图]</string>
+          </property>
+         </widget>
+        </item>
         <item row="0" column="1">
          <widget class="QCheckBox" name="colorSave">
           <property name="text">
            <string>save color</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="targetColor">
+          <property name="text">
+           <string>[目标颜色]  </string>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="6">
+         <widget class="QLineEdit" name="heightEdit">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="5">
+         <widget class="QLabel" name="label_5">
+          <property name="text">
+           <string>height</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="1">
+         <widget class="QRadioButton" name="red">
+          <property name="text">
+           <string>red</string>
+          </property>
+          <property name="shortcut">
+           <string/>
+          </property>
+          <attribute name="buttonGroup">
+           <string notr="true">colorSelection</string>
+          </attribute>
+         </widget>
+        </item>
+        <item row="8" column="4">
+         <widget class="QLineEdit" name="widthEdit">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="6">
+         <widget class="QCheckBox" name="binary">
+          <property name="text">
+           <string>binary</string>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="1">
+         <widget class="QRadioButton" name="blue">
+          <property name="text">
+           <string>blue</string>
+          </property>
+          <property name="shortcut">
+           <string/>
+          </property>
+          <attribute name="buttonGroup">
+           <string notr="true">colorSelection</string>
+          </attribute>
+         </widget>
+        </item>
+        <item row="8" column="3">
+         <widget class="QLabel" name="label_4">
+          <property name="text">
+           <string>width</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="5" colspan="2">
+         <widget class="QCheckBox" name="labelSave">
+          <property name="text">
+           <string>save Label</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="5">
+         <widget class="QCheckBox" name="warp">
+          <property name="text">
+           <string>wrap</string>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="6">
+         <widget class="QPushButton" name="saveWH">
+          <property name="text">
+           <string>保存宽高</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="4">
+         <widget class="QComboBox" name="labelSelection">
+          <item>
+           <property name="text">
+            <string>1</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>2</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>3</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>4</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>5</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>outpost</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>guard</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>base</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>negative</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="5" column="3">
+         <widget class="QLabel" name="label_6">
+          <property name="text">
+           <string>class</string>
           </property>
          </widget>
         </item>
@@ -282,10 +414,51 @@ QPushButton:pressed {
         </property>
        </widget>
       </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="imageArea">
+     <property name="styleSheet">
+      <string notr="true">QGroupBox {
+  font-weight: bold;
+  margin-top: 12px;
+  padding-top: 15px;
+}</string>
+     </property>
+     <property name="title">
+      <string>Preview</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout">
       <item>
-       <widget class="QPushButton" name="createLabel">
-        <property name="styleSheet">
-         <string notr="true">QPushButton {
+       <widget class="QLabel" name="previewLabel">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>180</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Preview</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="createLabel">
+     <property name="styleSheet">
+      <string notr="true">QPushButton {
     border: 1px solid #c0c0c0;
     border-radius: 5px;
     background: #f0f0f0;
@@ -297,13 +470,10 @@ QPushButton:hover {
 QPushButton:pressed {
     background: #d0d0d0;
 }</string>
-        </property>
-        <property name="text">
-         <string>创建标签</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
+     </property>
+     <property name="text">
+      <string>创建标签</string>
+     </property>
     </widget>
    </item>
   </layout>

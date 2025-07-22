@@ -20,7 +20,7 @@ public:
     void setLeftPart(leftPart *leftPart);
 
     QString createFileName(const QString &originalFileName);
-    void saveCroppedImage(const cv::Mat &crop, const QString &originalFileName, const QString &className);
+    bool saveCroppedImage(const cv::Mat &crop, const QString &originalFileName, const QString &className);
     void saveClsLabels();
 
 public slots:

@@ -72,12 +72,11 @@ void leftPart::processDirectory(const QString& dirPath)
     QStringList filters{"*.png", "*.jpg", "*.jpeg"};   // 文件过滤器
     QFileInfoList imageFiles = dir.entryInfoList(filters, QDir::Files);
 
-    QMap<QString, bool> processedMap;
     for (const auto &file : imageFiles)
     {
-        processedMap[file.absoluteFilePath()] = false;
+        is_images_processed[file.absoluteFilePath()] = false;
     }
-    populateImageList(imageFiles, processedMap);
+    populateImageList(imageFiles);
 }
 
 // 选择保存路径
@@ -114,27 +113,26 @@ void leftPart::loadClsLabel(const QString &savePath)
 
     // 获取保存目录下的所有文件名
     QStringList savedFiles;
-    // 递归遍历所有内容以及子目录
-    QDirIterator it(savePath, QDir::Files, QDirIterator::Subdirectories);
+    // 递归遍历图片内容
+    QStringList filters{"*.png", "*.jpg", "*.jpeg"};
+    QDirIterator it(savePath, filters, QDir::Files, QDirIterator::Subdirectories);
     while (it.hasNext())
     {
         savedFiles << QFileInfo(it.next()).fileName();
     }
 
     // 遍历所有图像文件
+    QSet<QString> savedFilesPrefixes;
+
+    for (const auto &savedFile : savedFiles)
+    {
+        savedFilesPrefixes.insert(QFileInfo(savedFile).baseName());
+    }
+
     for (int i = 0; i < imageFiles.size(); i++)
     {
         QString originalFileName = imageFiles[i].baseName();
-        bool is_processed = false;
-
-        for (const auto &savedFile : savedFiles)
-        {
-            if (savedFile.startsWith(originalFileName))
-            {
-                is_processed = true;
-                break;
-            }
-        }
+        bool is_processed = savedFilesPrefixes.contains(originalFileName);
 
         if (is_processed)
         {
@@ -180,6 +178,7 @@ void leftPart::loadDetectionLabel(const QString &savePath)
     }
 }
 
+// 加载检测标签到图像
 void leftPart::loadDetectionLabelOnImage(const QString &imagePath)
 {
     QFileInfo fileInfo(imagePath);
@@ -196,9 +195,8 @@ void leftPart::loadDetectionLabelOnImage(const QString &imagePath)
         {
             QString line = in.readLine();
             QStringList values = line.split(' ', QString::SkipEmptyParts);
-            if (values.size() < 5)
-                continue;
 
+            // 记录矩形框部分
             int classId = values[0].toInt();
             double cx = values[1].toDouble();
             double cy = values[2].toDouble();
@@ -234,6 +232,33 @@ void leftPart::loadDetectionLabelOnImage(const QString &imagePath)
                 label.color = "";
             }
 
+            // detection
+            if (values.size() == 5)
+            {
+                label.is_pose = false;
+            }
+            // pose
+            else if (values.size() == 17)
+            {
+                label.is_pose = true;
+
+                // 关键点
+                for (int i = 5; i < 17; i += 3)
+                {
+                    double kpt_x = values[i].toDouble() * imgWidth;
+                    double kpt_y = values[i + 1].toDouble() * imgHeight;
+
+                    label.armor_points.push_back(cv::Point2f(kpt_x, kpt_y));
+                }
+
+                if (label.armor_points.size() != 4)
+                    continue;
+            }
+            else
+            {
+                continue;
+            }
+
             detectionLabels_.push_back(label);
         }
 
@@ -250,6 +275,7 @@ void leftPart::on_openDir_clicked()
 void leftPart::on_nextImage_clicked()
 {
     if (imageFiles.isEmpty()) return;
+    imageLabel->clearLabels();
 
     if (saveCurrentLabels())
     {
@@ -263,6 +289,7 @@ void leftPart::on_nextImage_clicked()
 void leftPart::on_prevImage_clicked()
 {
     if (imageFiles.isEmpty()) return;
+    imageLabel->clearLabels();
 
     if (saveCurrentLabels())
     {
@@ -420,13 +447,13 @@ void leftPart::on_deleteFile_clicked()
     imageLabel->clearLabels();
     finalArmors_.clear();
     detectionLabels_.clear();
+
 }
 
 // 创建图像文件条目
-void leftPart::populateImageList(const QFileInfoList &imageFiles, QMap<QString, bool> &is_images_processed)
+void leftPart::populateImageList(const QFileInfoList &imageFiles)
 {
     this->imageFiles = imageFiles;
-    this->is_images_processed = is_images_processed;
     currentIndex = 0;
 
     ui->imageList->clear();
@@ -535,7 +562,7 @@ void leftPart::displayImage(const QString &imagePath)
     }
 
     // 自动标注
-    if (autoMode_ && !is_images_processed[imagePath] && is_labeling_ && detectionLabels_.empty())
+    if (autoMode_ && !is_images_processed[imagePath] && is_labeling_)
     {
         cv::Mat img = imageLabel->originalImg.clone();
 
@@ -682,4 +709,3 @@ void leftPart::forwardOnLabelSelected(detectionLabel label)
         detectionInstance->onDetectionLabelSelected(label);
     }
 }
-

@@ -151,7 +151,7 @@ QString cls::createFileName(const QString &originalFileName)
 }
 
 // 创建文件夹并保存裁剪后的图像
-void cls::saveCroppedImage(const cv::Mat &crop, const QString &originalFileName, const QString &className)
+bool cls::saveCroppedImage(const cv::Mat &crop, const QString &originalFileName, const QString &className)
 {
     // 创建文件夹
     QString classDirPath = savePath_ + "/" + className;
@@ -161,7 +161,7 @@ void cls::saveCroppedImage(const cv::Mat &crop, const QString &originalFileName,
         if (!classDir.mkpath("."))
         {
             emit statusMessageUpdate("创建文件夹失败: " + classDirPath);
-            return;
+            return false;
         }
     }
 
@@ -192,11 +192,19 @@ void cls::saveCroppedImage(const cv::Mat &crop, const QString &originalFileName,
         resizedcrop = crop;
     }
 
-    cv::cvtColor(resizedcrop, resizedcrop, cv::COLOR_BGR2RGB);
+    if (resizedcrop.channels() == 3)
+    {
+        cv::cvtColor(resizedcrop, resizedcrop, cv::COLOR_BGR2GRAY);
+    }
+
     if (!cv::imwrite(fullPath.toStdString(), resizedcrop))
     {
         emit statusMessageUpdate("保存图像失败: " + fullPath);
-        return;
+        return false;
+    }
+    else
+    {
+        return true;
     }
 }
 
@@ -234,9 +242,13 @@ void cls::saveClsLabels()
         {
             cv::Mat crop = label.warp;
 
-            saveCroppedImage(crop, originalFileName, QString::fromStdString(label.name));
-            label.is_saved = true;
-            savedCount++;
+            if (saveCroppedImage(crop, originalFileName, QString::fromStdString(label.name)))
+            {
+                label.is_saved = true;
+                is_images_processed[currentImagePath] = true;
+                savedCount++;
+            }
+
         }
     }
 

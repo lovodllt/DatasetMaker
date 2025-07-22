@@ -3,11 +3,8 @@
 #pragma once
 
 #include <QMainWindow>
-#include <QMap>
 #include <QSettings>
 
-#include "cls.h"
-#include "detection.h"
 #include "leftPart.h"
 
 QT_BEGIN_NAMESPACE
@@ -39,7 +36,6 @@ private:
     leftPart *leftWidget() const;
     cls *clsWidget() const;
     detection *detectionWidget() const;
-
 };
 
 #endif // DATASETMAKER_H
