@@ -20,6 +20,7 @@ public:
     void saveDetectionLabels();
     void makePoseLabel(std::vector<cv::Point> &posePoints);
     void displayPreview(cv::Mat img);
+    void keyPressEvent(QKeyEvent *event) override;
 
 public slots:
     void on_autoMode_toggled(bool checked);

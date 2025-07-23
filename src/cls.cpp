@@ -130,7 +130,7 @@ void cls::on_createLabel_clicked()
         cv::Mat binary;
         cvtColor(label.warp, binary, cv::COLOR_BGR2GRAY);
         threshold(binary, binary, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
-        cv::cvtColor(binary, label.warp, cv::COLOR_GRAY2BGR);
+        cvtColor(binary, label.warp, cv::COLOR_GRAY2BGR);
     }
 
     detectionLabels_.push_back(label);
@@ -194,7 +194,7 @@ bool cls::saveCroppedImage(const cv::Mat &crop, const QString &originalFileName,
 
     if (resizedcrop.channels() == 3)
     {
-        cv::cvtColor(resizedcrop, resizedcrop, cv::COLOR_BGR2GRAY);
+        cvtColor(resizedcrop, resizedcrop, cv::COLOR_BGR2GRAY);
     }
 
     if (!cv::imwrite(fullPath.toStdString(), resizedcrop))
@@ -291,6 +291,7 @@ void cls::displayPreview()
     // 优先预览临时标签, 其次预览选中标签
     if (!leftPartInstance->imageLabel->tmpLabel.rect.empty())
     {
+        std::cout<<"1"<<std::endl;
         cv::Mat img = originalImg(leftPartInstance->imageLabel->tmpLabel.rect);
         showPreview(img);
     }
@@ -300,6 +301,7 @@ void cls::displayPreview()
         {
             if (label.is_selected)
             {
+                cv::Mat img;
                 showPreview(label.warp);
             }
         }
@@ -348,6 +350,18 @@ void cls::on_warp_toggled(bool checked)
     {
         is_warp_ = true;
         emit statusMessageUpdate("保存warp后图片");
+        if (!detectionLabels_.empty())
+        {
+            cv::Mat img = leftPartInstance->imageLabel->getCurrentImage();
+            for (auto &label : detectionLabels_)
+            {
+                if (!label.armor_points.empty())
+                {
+                    label.warp = autoModeInstance->warp(img, label.armor_points);
+                }
+            }
+            displayPreview();
+        }
     }
     else
     {
@@ -363,6 +377,20 @@ void cls::on_binary_toggled(bool checked)
     {
         is_binary_ = true;
         emit statusMessageUpdate("保存binary后图片");
+        if (!detectionLabels_.empty())
+        {
+            cv::Mat img = leftPartInstance->imageLabel->getCurrentImage();
+            for (auto &label : detectionLabels_)
+            {
+                if (label.warp.channels() != 1)
+                {
+                    cvtColor(label.warp, label.warp, cv::COLOR_RGB2GRAY);
+                }
+                threshold(label.warp, label.warp, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+                cvtColor(label.warp, label.warp, cv::COLOR_GRAY2RGB);
+            }
+            displayPreview();
+        }
     }
     else
     {

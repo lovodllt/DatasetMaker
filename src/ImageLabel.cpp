@@ -98,15 +98,19 @@ void ImageLabel::drawLabels()
                 }
                 else if (labelMode_ == "detection")
                 {
+                    if (labelSave_)
+                    {
+                        putText(img, label.name, label.rect.tl(), cv::FONT_HERSHEY_SIMPLEX, fontScale, color, 0.5, cv::LINE_AA);
+                    }
                     if (colorSave_)
                     {
-                        putText(img, label.color, label.rect.tl(), cv::FONT_HERSHEY_SIMPLEX, fontScale, color, 0.5, cv::LINE_AA);
+                        putText(img, label.color, cv::Point(label.rect.tl().x + 30, label.rect.tl().y), cv::FONT_HERSHEY_SIMPLEX, fontScale, color, 0.5, cv::LINE_AA);
                     }
                 }
 
                 if (autoMode_ && label.confidence > confidence_threshold_)
                 {
-                    putText(img, QString::number(label.confidence, 'f', 2).toStdString(), cv::Point(label.rect.x + 60, label.rect.y), cv::FONT_HERSHEY_SIMPLEX, fontScale, color, 0.5, cv::LINE_AA);
+                    putText(img, QString::number(label.confidence, 'f', 2).toStdString(), cv::Point(label.rect.x + 90, label.rect.y), cv::FONT_HERSHEY_SIMPLEX, fontScale, color, 0.5, cv::LINE_AA);
                 }
             }
         }

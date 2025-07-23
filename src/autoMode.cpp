@@ -181,10 +181,23 @@ void autoMode::Inference(cv::Mat &img)
 
         colorFiliter(img, inferArmor);
     }
-    std::cout << "qualifiedArmors: " << qualifiedArmors.size() << std::endl;
 
-    barFiliter();
-    armorFiliter();
+    if (is_warp_)
+    {
+        barFiliter();
+        armorFiliter();
+
+        if (!qualifiedArmors.empty() && finalArmors_.empty())
+        {
+            is_warp_ = false;
+            tmp_warp_close = true;
+            noWarpFiliter();
+        }
+    }
+    else
+    {
+        noWarpFiliter();
+    }
 
     if (!finalArmors_.empty())
     {
@@ -477,6 +490,24 @@ void autoMode::armorFiliter()
     }
 }
 
+void autoMode::noWarpFiliter()
+{
+    for (auto &armor : qualifiedArmors)
+    {
+        if (armor.box.empty())
+        {
+            continue;
+        }
+
+        finalArmor final_armor;
+        final_armor.box = armor.box;
+        final_armor.color = armor.color;
+        final_armor.confidence = armor.confidence;
+
+        finalArmors_.push_back(final_armor);
+    }
+}
+
 // 透视变换
 cv::Mat autoMode::warp(cv::Mat &img, std::vector<cv::Point2f> &armor_points)
 {
@@ -586,6 +617,8 @@ void autoMode::classify(cv::Mat img)
 
 void autoMode::update(cv::Mat &img)
 {
+    cv::cvtColor(img, img, cv::COLOR_BGR2RGB);
+
     for (auto &armor : finalArmors_)
     {
         detectionLabel label;
@@ -598,12 +631,19 @@ void autoMode::update(cv::Mat &img)
         label.center = armor.center;
         label.armor_points = armor.armor_points;
 
-        cvtColor(armor.warp, label.warp, cv::COLOR_BGR2GRAY);
+        if (is_warp_)
+        {
+            label.warp = armor.warp;
+        }
+        else
+        {
+            label.warp = img(label.rect);
+        }
 
         if (is_binary_)
         {
+            cvtColor(label.warp, label.warp, cv::COLOR_BGR2GRAY);
             threshold(label.warp, label.warp, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
-            cvtColor(label.warp, label.warp, cv::COLOR_GRAY2BGR);
         }
 
         if (is_poseMode_)

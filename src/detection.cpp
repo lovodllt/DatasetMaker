@@ -1,4 +1,6 @@
 #include "detection.h"
+
+#include "ImageLabel.h"
 #include "ui_detection.h"
 
 detection::detection(QWidget *parent) :
@@ -15,6 +17,7 @@ detection::detection(QWidget *parent) :
     ui->warp->setEnabled(false);
 
     colorSelection = ui->colorSelection;
+    setFocusPolicy(Qt::StrongFocus);
 
     connect(colorSelection, QOverload<QAbstractButton *>::of(&QButtonGroup::buttonClicked), this, &detection::onColorSelected);
     connect(ui->labelList, &QListWidget::itemClicked, this, &detection::on_labelList_itemClicked);
@@ -199,6 +202,8 @@ void detection::onColorSelected(QAbstractButton *button)
             break;
         }
     }
+
+    setFocus();
 }
 
 // 更新标签条目
@@ -305,6 +310,7 @@ void detection::onDetectionLabelSelected(detectionLabel &label)
 
     if (labelSave_)
     {
+        ui->labelSelection->setCurrentText(QString::fromStdString(label.name));
         displayPreview(label.warp);
     }
 }
@@ -501,7 +507,19 @@ void detection::saveDetectionLabels()
             // 保存图像文件
             if (labelSave_ && !label.warp.empty())
             {
-                QString imageFileName = imagesPath + "/" + originalFileName + "_" + QString::number(savedCount) + ".jpg";
+                // 创建对应类的目录
+                QString classDirPath = imagesPath + "/" + QString::fromStdString(label.name);
+                QDir classDir(classDirPath);
+                if (!classDir.exists())
+                {
+                    if (!classDir.mkpath("."))
+                    {
+                        emit statusMessageUpdate("无法创建图像目录: " + classDirPath);
+                        return;
+                    }
+                }
+
+                QString imageFileName = classDirPath + "/" + originalFileName + "_" + QString::number(savedCount) + ".jpg";
                 QString fullImagePath = imageDir.filePath(imageFileName);
                 cv::Mat img = label.warp;
 
@@ -574,6 +592,11 @@ void detection::on_labelSave_toggled(bool checked)
         ui->widthEdit->setEnabled(false);
         ui->heightEdit->setEnabled(false);
         ui->saveWH->setEnabled(false);
+        ui->binary->setEnabled(false);
+        ui->warp->setEnabled(false);
+
+        is_warp_ = false;
+        is_binary_ = false;
 
         width = 0;
         height = 0;
@@ -593,6 +616,7 @@ void detection::on_binary_toggled(bool checked)
 void detection::on_labelSelection_currentTextChanged(const QString &text)
 {
     labelId = text.toStdString();
+    emit statusMessageUpdate("当前选择的标签: " + text);
 }
 
 void detection::on_saveWH_clicked()
@@ -722,7 +746,7 @@ void detection::makePoseLabel(std::vector<cv::Point> &posePoints)
             cv::Mat binary;
             cvtColor(poseLabel.warp, binary, cv::COLOR_BGR2GRAY);
             threshold(binary, binary, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
-            poseLabel.warp = binary;
+            cvtColor(binary, poseLabel.warp, cv::COLOR_GRAY2BGR);
         }
         if (!poseLabel.warp.empty())
         {
@@ -735,4 +759,38 @@ void detection::makePoseLabel(std::vector<cv::Point> &posePoints)
 
     leftPartInstance->imageLabel->drawLabels();
     updateLabelList();
+    setFocus();
+}
+
+void detection::keyPressEvent(QKeyEvent *event)
+{
+    if (labelSave_ && event->key() >= Qt::Key_1 && event->key() <= Qt::Key_9)
+    {
+        int index = event->key() - Qt::Key_1;
+        if (index >= 0 && index < ui->labelSelection->count())
+        {
+            ui->labelSelection->setCurrentIndex(index);
+            updateLabelList();
+            leftPartInstance->imageLabel->drawLabels();
+        }
+    }
+    else if (colorSave_)
+    {
+        if (event->key() == Qt::Key_Q)
+        {
+            ui->red->setChecked(true);
+            currentColor = "red";
+            onColorSelected(ui->red);
+        }
+        else if (event->key() == Qt::Key_E)
+        {
+            ui->blue->setChecked(true);
+            currentColor = "blue";
+            onColorSelected(ui->blue);
+        }
+    }
+    else
+    {
+        QWidget::keyPressEvent(event);
+    }
 }

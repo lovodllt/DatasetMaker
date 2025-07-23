@@ -283,6 +283,7 @@ void leftPart::on_nextImage_clicked()
 
         int newIndex = (currentIndex + 1) % imageFiles.size();
         setCurrentImage(newIndex);
+        clsInstance->displayPreview();
     }
 }
 
@@ -297,6 +298,7 @@ void leftPart::on_prevImage_clicked()
 
         int newIndex = (currentIndex - 1) % imageFiles.size();
         setCurrentImage(newIndex);
+        clsInstance->displayPreview();
     }
 }
 
@@ -447,7 +449,9 @@ void leftPart::on_deleteFile_clicked()
     imageLabel->clearLabels();
     finalArmors_.clear();
     detectionLabels_.clear();
+    is_images_processed[imageFiles[currentIndex].absoluteFilePath()] = false;
 
+    setCurrentImage(currentIndex);
 }
 
 // 创建图像文件条目

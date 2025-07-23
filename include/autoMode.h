@@ -63,6 +63,7 @@ public:
     void barFiliter();
     bool isValidArmor(inferArmor &armor);
     void armorFiliter();
+    void noWarpFiliter();
 
     cv::Mat extractNumber(cv::Mat &img, finalArmor &armor);
     cv::Mat warp(cv::Mat &img, std::vector<cv::Point2f> &armor_points);

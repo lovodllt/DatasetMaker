@@ -52,7 +52,6 @@ public:
     std::string clsname{};
     int width{};
     int height{};
-    cv::Mat label_img;
 };
 
 #endif // CLS_H
