@@ -43,7 +43,6 @@ public:
     cv::Mat originalImg;
     double currentScale;
     detectionLabel tmpLabel;
-    bool labelSelected = false;
     std::vector<cv::Point> posePoints;
 };
 

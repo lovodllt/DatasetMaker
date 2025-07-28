@@ -69,7 +69,7 @@ void ImageLabel::drawLabels()
     if (labelMode_ == "cls" || labelMode_ == "detection")
     {
         // 绘制已有标签
-        if (!detectionLabels_.empty() && is_labeling_)
+        if (!detectionLabels_.empty())
         {
             for (const auto &label : detectionLabels_)
             {
@@ -115,13 +115,17 @@ void ImageLabel::drawLabels()
             }
         }
 
-        if (is_poseMode_)
+        // 绘制临时标签
+        if (is_labeling_)
         {
-            drawPose(img);
-        }
-        else
-        {
-            drawDetection(img);
+            if (is_poseMode_)
+            {
+                drawPose(img);
+            }
+            else
+            {
+                drawDetection(img);
+            }
         }
     }
 
@@ -149,7 +153,21 @@ void ImageLabel::drawLabels()
     resize(scaledSize);
 
     // 预览标签
-    emit previewRequested();
+    if (labelMode_ == "cls")
+    {
+        leftPartInstance->clsInstance->displayPreview();
+    }
+    else if (labelMode_ == "detection" && labelSave_ && !detectionLabels_.empty())
+    {
+        for (auto label : detectionLabels_)
+        {
+            if (label.is_selected)
+            {
+                leftPartInstance->detectionInstance->displayPreview(label.warp);
+                break;
+            }
+        }
+    }
 
     update();
 }
@@ -168,9 +186,6 @@ void ImageLabel::mousePressEvent(QMouseEvent *event)
         emit statusMessageUpdate(message);
         return;
     }
-
-    if (!is_labeling_)
-        return;
 
     // 获取鼠标相对于视图的位置
     QPoint viewportMousePos = event->pos();
@@ -200,11 +215,9 @@ void ImageLabel::mousePressEvent(QMouseEvent *event)
 
                 emit onLabelSelected(label);
 
-                QString message = tr("标签模式: 选中标签 '%1'").arg(QString::fromStdString(label.name));
-                emit statusMessageUpdate(message);
+                emit statusMessageUpdate("已选中标签");
                 break;
             }
-
             labelSelected = false;
         }
     }
@@ -215,7 +228,7 @@ void ImageLabel::mousePressEvent(QMouseEvent *event)
         drawLabels();
     }
     // 未选中且pose模式开始绘制点
-    else if (is_poseMode_)
+    else if (is_poseMode_ && is_labeling_)
     {
         if (!posePoints.empty())
         {
@@ -247,7 +260,7 @@ void ImageLabel::mousePressEvent(QMouseEvent *event)
         drawLabels();
     }
     // 未选中时开始绘制临时标签
-    else if (tmpLabel.rect.empty())
+    else if (tmpLabel.rect.empty() && is_labeling_)
     {
         firstPoint = clickPoint;
         is_drawing = true;
@@ -330,6 +343,8 @@ void ImageLabel::keyPressEvent(QKeyEvent *event)
     }
     else if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace)
     {
+        setFocus();
+
         if (labelSelected)
         {
             auto index = std::remove_if(detectionLabels_.begin(), detectionLabels_.end(), [](const detectionLabel &label) {

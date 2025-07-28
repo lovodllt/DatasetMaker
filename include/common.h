@@ -44,9 +44,11 @@ extern QString saveFormat_;
 extern QString labelMode_;
 extern QMap<QString, bool> is_images_processed;
 extern bool is_labeling_;
+extern std::map<int, std::string> clsList;
 extern std::vector<detectionLabel> detectionLabels_;
 extern int saveId_;
 extern bool autoMode_;
+extern bool labelSelected;
 // cls
 extern bool is_autoCut_;
 extern bool is_warp_;

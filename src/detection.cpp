@@ -15,6 +15,7 @@ detection::detection(QWidget *parent) :
     ui->heightEdit->setEnabled(false);
     ui->binary->setEnabled(false);
     ui->warp->setEnabled(false);
+    ui->labelSelection->setEnabled(false);
 
     colorSelection = ui->colorSelection;
     setFocusPolicy(Qt::StrongFocus);
@@ -137,6 +138,20 @@ void detection::on_colorSave_toggled(bool checked)
         {
             emit statusMessageUpdate("颜色保存模式已启用");
             button->setCheckable(true);
+            for (auto &label : detectionLabels_)
+            {
+                if (label.is_selected)
+                {
+                    if (label.color == "red")
+                    {
+                        ui->red->setChecked(true);
+                    }
+                    else if (label.color == "blue")
+                    {
+                        ui->blue->setChecked(true);
+                    }
+                }
+            }
         }
         else
         {
@@ -292,6 +307,7 @@ void detection::on_labelList_itemClicked(QListWidgetItem *item)
 void detection::onDetectionLabelSelected(detectionLabel &label)
 {
     updateLabelList();
+    setFocus();
 
     if (colorSave_)
     {
@@ -349,6 +365,7 @@ void detection::on_createLabel_clicked()
     label.color = currentColor;
     label.rect = tmpLabel.rect;
     label.is_selected = true;
+    labelSelected = true;
     label.is_saved = false;
     label.is_pose = false;
 
@@ -554,6 +571,7 @@ void detection::saveDetectionLabels()
             }
 
             label.is_saved = true;
+            is_images_processed[currentImagePath] = true;
             savedCount++;
         }
     }
@@ -583,6 +601,20 @@ void detection::on_labelSave_toggled(bool checked)
         ui->widthEdit->setEnabled(true);
         ui->heightEdit->setEnabled(true);
         ui->saveWH->setEnabled(true);
+        ui->labelSelection->setEnabled(true);
+
+        if (!detectionLabels_.empty())
+        {
+            for (auto label : detectionLabels_)
+            {
+                if (label.is_selected)
+                {
+                    ui->labelSelection->setCurrentText(QString::fromStdString(label.name));
+                    displayPreview(label.warp);
+                    break;
+                }
+            }
+        }
     }
     else
     {
@@ -594,6 +626,7 @@ void detection::on_labelSave_toggled(bool checked)
         ui->saveWH->setEnabled(false);
         ui->binary->setEnabled(false);
         ui->warp->setEnabled(false);
+        ui->labelSelection->setEnabled(false);
 
         is_warp_ = false;
         is_binary_ = false;
@@ -606,11 +639,62 @@ void detection::on_labelSave_toggled(bool checked)
 void detection::on_warp_toggled(bool checked)
 {
     is_warp_ = checked;
+
+    if (is_warp_)
+    {
+        if (!detectionLabels_.empty())
+        {
+            cv::Mat img = leftPartInstance->imageLabel->getCurrentImage();
+            for (auto &label : detectionLabels_)
+            {
+                if (!label.armor_points.empty())
+                {
+                    label.warp = leftPartInstance->autoModeInstance->warp(img, label.armor_points);
+                    if (label.is_selected)
+                    {
+                        displayPreview(label.warp);
+                    }
+                }
+            }
+        }
+        emit statusMessageUpdate("保存warp后图片");
+    }
+    else
+    {
+        emit statusMessageUpdate("关闭warp模式");
+    }
 }
 
 void detection::on_binary_toggled(bool checked)
 {
     is_binary_ = checked;
+
+    if (is_binary_)
+    {
+        if (!detectionLabels_.empty())
+        {
+            cv::Mat img = leftPartInstance->imageLabel->getCurrentImage();
+            for (auto &label : detectionLabels_)
+            {
+                if (label.warp.channels() != 1)
+                {
+                    cvtColor(label.warp, label.warp, cv::COLOR_RGB2GRAY);
+                }
+                threshold(label.warp, label.warp, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+                cvtColor(label.warp, label.warp, cv::COLOR_GRAY2RGB);
+
+                if (label.is_selected)
+                {
+                    displayPreview(label.warp);
+                }
+            }
+        }
+        emit statusMessageUpdate("保存binary后图片");
+    }
+    else
+    {
+        emit statusMessageUpdate("关闭binary模式");
+    }
 }
 
 void detection::on_labelSelection_currentTextChanged(const QString &text)
@@ -651,7 +735,7 @@ void detection::displayPreview(cv::Mat img)
 
     if (img.channels() == 1)
     {
-        cv::cvtColor(img, img, cv::COLOR_GRAY2BGR);
+        cvtColor(img, img, cv::COLOR_GRAY2BGR);
     }
 
     QImage qImg(img.data, img.cols, img.rows, img.step, QImage::Format_RGB888);
@@ -726,7 +810,7 @@ void detection::makePoseLabel(std::vector<cv::Point> &posePoints)
     poseLabel.is_saved = false;
     poseLabel.is_selected = true;
     poseLabel.is_pose = true;
-    leftPartInstance->imageLabel->labelSelected = true;
+    labelSelected = true;
     cv::Rect roi = rect;
     poseLabel.rect = roi;
     if (labelSave_)
@@ -773,6 +857,10 @@ void detection::keyPressEvent(QKeyEvent *event)
             updateLabelList();
             leftPartInstance->imageLabel->drawLabels();
         }
+    }
+    else if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace)
+    {
+        leftPartInstance->imageLabel->setFocus();
     }
     else if (colorSave_)
     {

@@ -84,11 +84,6 @@ void DatasetMaker::on_clsMode_triggered()
         leftWidget()->imageLabel->drawLabels();
     }
 
-    if (!savePath_.isEmpty())
-    {
-        leftWidget()->loadClsLabel(savePath_);
-    }
-
     ui->rightStack->setCurrentWidget(clsWidget());
     ui->statusBar->showMessage("切换到图像分类模式");
 }
@@ -104,11 +99,6 @@ void DatasetMaker::on_detectionMode_triggered()
     {
         leftWidget()->imageLabel->tmpLabel = detectionLabel();
         leftWidget()->imageLabel->drawLabels();
-    }
-
-    if (!savePath_.isEmpty())
-    {
-        leftWidget()->loadDetectionLabel(savePath_ + "/labels");
     }
 
     ui->rightStack->setCurrentWidget(detectionWidget());

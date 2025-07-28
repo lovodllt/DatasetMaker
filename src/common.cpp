@@ -6,9 +6,11 @@ QString saveFormat_ = "yolo";
 QString labelMode_{};
 QMap<QString, bool> is_images_processed;
 bool is_labeling_ = false;
+std::map<int, std::string> clsList{{1, "1"}, {2, "2"}, {3, "3"}, {4, "4"}, {5, "5"}, {6, "outpost"}, {7, "guard"}, {8, "base"}, {9, "negative"}};
 std::vector<detectionLabel> detectionLabels_;
 int saveId_ = 0;
 bool autoMode_ = false;
+bool labelSelected = false;
 // cls
 bool is_autoCut_ = false;
 bool is_warp_ = false;

@@ -123,6 +123,7 @@ void cls::on_createLabel_clicked()
     label.name = clsname;
     label.rect = tmpLabel.rect;
     label.is_selected = true;
+    labelSelected = true;
     label.warp = leftPartInstance->imageLabel->originalImg(tmpLabel.rect);
 
     if (is_binary_)
@@ -142,19 +143,11 @@ void cls::on_createLabel_clicked()
     emit statusMessageUpdate("标签创建成功");
 }
 
-// 创建保存文件名
-QString cls::createFileName(const QString &originalFileName)
-{
-    // 生成文件名: 原始文件名_索引.jpg
-    saveId_++;
-    return QString("%1_%2.jpg").arg(originalFileName).arg(saveId_);
-}
-
 // 创建文件夹并保存裁剪后的图像
 bool cls::saveCroppedImage(const cv::Mat &crop, const QString &originalFileName, const QString &className)
 {
     // 创建文件夹
-    QString classDirPath = savePath_ + "/" + className;
+    QString classDirPath = savePath_ + "/images/" + className;
     QDir classDir(classDirPath);
     if (!classDir.exists())
     {
@@ -165,7 +158,8 @@ bool cls::saveCroppedImage(const cv::Mat &crop, const QString &originalFileName,
         }
     }
 
-    QString fileName = createFileName(originalFileName);
+    saveId_++;
+    QString fileName = QString("%1_%2.jpg").arg(originalFileName).arg(saveId_);
     QString fullPath = classDir.filePath(fileName);
 
     // 调整图像大小
@@ -236,6 +230,24 @@ void cls::saveClsLabels()
 
     int savedCount = 0;
 
+    // 创建图像主目录
+    QString imageDir = savePath_ + "/images";
+    QDir(imageDir).mkpath(".");
+    // 创建日志主目录
+    QString logDir = savePath_ + "/logs";
+    QDir(logDir).mkpath(".");
+    QString logPath = logDir + "/" + originalFileName + ".log";
+    QFile logFile(logPath);
+
+    // 覆盖日志内容
+    if (!logFile.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        emit statusMessageUpdate("无法打开日志文件");
+        return;
+    }
+
+    QTextStream logStream(&logFile);
+
     for (auto &label : detectionLabels_)
     {
         if (!label.is_saved)
@@ -244,16 +256,22 @@ void cls::saveClsLabels()
 
             if (saveCroppedImage(crop, originalFileName, QString::fromStdString(label.name)))
             {
+                // 写入日志
+                logStream << QString::fromStdString(label.name) << ","
+                          << label.rect.x << ","
+                          << label.rect.y << ","
+                          << label.rect.width << ","
+                          << label.rect.height << "\n";
+
                 label.is_saved = true;
-                is_images_processed[currentImagePath] = true;
                 savedCount++;
             }
-
         }
     }
 
     if (savedCount > 0)
     {
+        is_images_processed[currentImagePath] = true;
         emit statusMessageUpdate("已保存 " + QString::number(savedCount) + " 张图像");
     }
     else
@@ -277,6 +295,15 @@ void cls::displayPreview()
     // 预览标签的lamba函数
     auto showPreview = [this](const cv::Mat img)
     {
+        if (img.channels() == 1)
+        {
+            cvtColor(img, img, cv::COLOR_GRAY2RGB);
+        }
+        else if (img.channels() == 3)
+        {
+            cvtColor(img, img, cv::COLOR_BGR2RGB);
+        }
+
         QImage qImg(img.data, img.cols, img.rows, img.step, QImage::Format_RGB888);
 
         QPixmap scaledPixmap = QPixmap::fromImage(qImg).scaled(
@@ -291,7 +318,6 @@ void cls::displayPreview()
     // 优先预览临时标签, 其次预览选中标签
     if (!leftPartInstance->imageLabel->tmpLabel.rect.empty())
     {
-        std::cout<<"1"<<std::endl;
         cv::Mat img = originalImg(leftPartInstance->imageLabel->tmpLabel.rect);
         showPreview(img);
     }
@@ -346,10 +372,10 @@ void cls::on_inferAgain_clicked()
 // 保存warp图片
 void cls::on_warp_toggled(bool checked)
 {
-    if (checked)
+    is_warp_ = checked;
+
+    if (is_warp_)
     {
-        is_warp_ = true;
-        emit statusMessageUpdate("保存warp后图片");
         if (!detectionLabels_.empty())
         {
             cv::Mat img = leftPartInstance->imageLabel->getCurrentImage();
@@ -362,10 +388,10 @@ void cls::on_warp_toggled(bool checked)
             }
             displayPreview();
         }
+        emit statusMessageUpdate("保存warp后图片");
     }
     else
     {
-        is_warp_ = false;
         emit statusMessageUpdate("关闭warp模式");
     }
 }
@@ -373,13 +399,12 @@ void cls::on_warp_toggled(bool checked)
 // 保存binary图片
 void cls::on_binary_toggled(bool checked)
 {
-    if (checked)
+    is_binary_ = checked;
+
+    if (is_binary_)
     {
-        is_binary_ = true;
-        emit statusMessageUpdate("保存binary后图片");
         if (!detectionLabels_.empty())
         {
-            cv::Mat img = leftPartInstance->imageLabel->getCurrentImage();
             for (auto &label : detectionLabels_)
             {
                 if (label.warp.channels() != 1)
@@ -391,10 +416,10 @@ void cls::on_binary_toggled(bool checked)
             }
             displayPreview();
         }
+        emit statusMessageUpdate("保存binary后图片");
     }
     else
     {
-        is_binary_ = false;
         emit statusMessageUpdate("关闭binary模式");
     }
 }
@@ -462,6 +487,8 @@ void cls::on_modelSelection_currentTextChanged(const QString &text)
 // 标签类别展示和更新
 void cls::onClsLabelSelected(detectionLabel &label)
 {
+    setFocus();
+
     QString className = QString::fromStdString(label.name);
 
     for (auto button : classButtonGroup->buttons())
@@ -472,5 +499,15 @@ void cls::onClsLabelSelected(detectionLabel &label)
             clsname = label.name;
             break;
         }
+    }
+
+    displayPreview();
+}
+
+void cls::keyPressEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace)
+    {
+        leftPartInstance->imageLabel->setFocus();
     }
 }

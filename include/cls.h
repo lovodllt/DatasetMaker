@@ -19,9 +19,9 @@ public:
 
     void setLeftPart(leftPart *leftPart);
 
-    QString createFileName(const QString &originalFileName);
     bool saveCroppedImage(const cv::Mat &crop, const QString &originalFileName, const QString &className);
     void saveClsLabels();
+    void keyPressEvent(QKeyEvent *event) override;
 
 public slots:
     void onClassSelected(QAbstractButton *button);

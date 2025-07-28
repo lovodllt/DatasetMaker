@@ -35,8 +35,8 @@ public:
     void saveFilePath();
     QString getCurrentImagePath();
     bool saveCurrentLabels();
-    void loadClsLabel(const QString &savePath);
-    void loadDetectionLabel(const QString &savePath);
+    void updateImageCheckState();
+    void loadClsLabelOnImage(const QString &imagePath);
     void loadDetectionLabelOnImage(const QString &imagePath);
     void forwardOnLabelSelected(detectionLabel label);
 

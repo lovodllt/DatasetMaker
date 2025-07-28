@@ -114,8 +114,6 @@ void autoMode::Inference(cv::Mat &img)
         is_warp_ = true;
     }
 
-    cvtColor(img, img, cv::COLOR_RGB2BGR);
-
     dataImg imgdata = preprocess(img);
 
     detectioNet.setInput(imgdata.blob);
@@ -182,20 +180,19 @@ void autoMode::Inference(cv::Mat &img)
         colorFiliter(img, inferArmor);
     }
 
-    if (is_warp_)
-    {
-        barFiliter();
-        armorFiliter();
+    barFiliter();
+    armorFiliter();
 
-        if (!qualifiedArmors.empty() && finalArmors_.empty())
-        {
-            is_warp_ = false;
-            tmp_warp_close = true;
-            noWarpFiliter();
-        }
-    }
-    else
+    if (!qualifiedArmors.empty() && finalArmors_.empty())
     {
+        is_warp_ = false;
+        tmp_warp_close = true;
+        if (labelMode_ == "detection" && labelSave_)
+        {
+            qualifiedArmors.clear();
+            emit statusMessageUpdate("推理装甲板四点失败，请手动标注");
+            return;
+        }
         noWarpFiliter();
     }
 
@@ -450,6 +447,10 @@ void autoMode::armorFiliter()
             continue;
 
         std::vector<Bar> bars = armor.bars;
+        if (bars.size() != 2)
+        {
+            continue;
+        }
 
         // 计算装甲板四顶点
         std::vector<cv::Point2f> left(4);            // lb, lt, rt, rb
@@ -617,8 +618,6 @@ void autoMode::classify(cv::Mat img)
 
 void autoMode::update(cv::Mat &img)
 {
-    cv::cvtColor(img, img, cv::COLOR_BGR2RGB);
-
     for (auto &armor : finalArmors_)
     {
         detectionLabel label;
@@ -644,6 +643,7 @@ void autoMode::update(cv::Mat &img)
         {
             cvtColor(label.warp, label.warp, cv::COLOR_BGR2GRAY);
             threshold(label.warp, label.warp, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+            cvtColor(label.warp, label.warp, cv::COLOR_GRAY2BGR);
         }
 
         if (is_poseMode_)

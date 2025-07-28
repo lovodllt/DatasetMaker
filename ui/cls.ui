@@ -414,6 +414,9 @@ QPushButton:pressed {
             <property name="text">
              <string>negative</string>
             </property>
+            <property name="shortcut">
+             <string>9</string>
+            </property>
             <attribute name="buttonGroup">
              <string notr="true">classButtonGroup</string>
             </attribute>
