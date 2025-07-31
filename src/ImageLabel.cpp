@@ -98,12 +98,15 @@ void ImageLabel::drawLabels()
                         line(img, label.armor_points[i], label.armor_points[(i + 1) % 4], color, thickness, cv::LINE_AA);
                     }
 
-                    for (int i = 0; i < label.armor_points.size(); i++)
+                    if (label.is_selected)
                     {
-                        if (i == adjustPointIndex || i == hoverPointIndex)
+                        for (int i = 0; i < label.armor_points.size(); i++)
                         {
-                            circle(img, label.armor_points[i], minDistance, cv::Scalar(255, 255, 255), -1);
-                            circle(img, label.armor_points[i], minDistance, cv::Scalar(255, 0, 0), ceil(minDistance / 4));
+                            if (i == adjustPointIndex || i == hoverPointIndex)
+                            {
+                                circle(img, label.armor_points[i], minDistance, cv::Scalar(255, 255, 255), -1);
+                                circle(img, label.armor_points[i], minDistance, cv::Scalar(255, 0, 0), ceil(minDistance / 4));
+                            }
                         }
                     }
                 }
@@ -520,8 +523,6 @@ void ImageLabel::clearLabels()
     {
         label.is_selected = false;
     }
-
-    is_poseMode_ = false;
 
     is_hoveringPoint = false;
     is_adjustingPoint = false;

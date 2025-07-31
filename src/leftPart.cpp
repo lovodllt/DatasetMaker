@@ -170,6 +170,8 @@ void leftPart::loadClsLabelOnImage(const QString &imagePath)
             continue;
 
         cv::Mat img = imageLabel->getCurrentImage();
+        if (img.empty())
+            continue;
         int classId = values[0].toInt();
         double lx = values[1].toDouble();
         double ly = values[2].toDouble();
