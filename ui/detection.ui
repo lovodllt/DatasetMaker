@@ -274,13 +274,6 @@ QPushButton:pressed {
           </property>
          </widget>
         </item>
-        <item row="5" column="6">
-         <widget class="QCheckBox" name="binary">
-          <property name="text">
-           <string>binary</string>
-          </property>
-         </widget>
-        </item>
         <item row="8" column="1">
          <widget class="QRadioButton" name="blue">
           <property name="text">
@@ -305,13 +298,6 @@ QPushButton:pressed {
          <widget class="QCheckBox" name="labelSave">
           <property name="text">
            <string>save Label</string>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="5">
-         <widget class="QCheckBox" name="warp">
-          <property name="text">
-           <string>wrap</string>
           </property>
          </widget>
         </item>
@@ -375,6 +361,20 @@ QPushButton:pressed {
          <widget class="QLabel" name="label_6">
           <property name="text">
            <string>class</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="6">
+         <widget class="QCheckBox" name="binary">
+          <property name="text">
+           <string>binary</string>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="5">
+         <widget class="QCheckBox" name="warp">
+          <property name="text">
+           <string>warp</string>
           </property>
          </widget>
         </item>

@@ -187,7 +187,7 @@ void autoMode::Inference(cv::Mat &img)
     {
         is_warp_ = false;
         tmp_warp_close = true;
-        if (labelMode_ == "detection" && labelSave_)
+        if (labelMode_ == "detection" && (labelSave_ || is_poseMode_))
         {
             qualifiedArmors.clear();
             emit statusMessageUpdate("推理装甲板四点失败，请手动标注");
@@ -638,6 +638,7 @@ void autoMode::update(cv::Mat &img)
         {
             label.warp = img(label.rect);
         }
+        cvtColor(label.warp, label.warp, cv::COLOR_RGB2BGR);
 
         if (is_binary_)
         {

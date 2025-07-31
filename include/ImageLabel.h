@@ -20,6 +20,7 @@ public:
     void drawLabels();
     void clearLabels();
     bool selectLabel(const cv::Point &point, const detectionLabel &label);
+    int getAdjustPointIndex(const cv::Point& clickPoint, detectionLabel &label);
 
 signals:
     void statusMessageUpdate(const QString &message);
@@ -44,6 +45,13 @@ public:
     double currentScale;
     detectionLabel tmpLabel;
     std::vector<cv::Point> posePoints;
+
+    bool is_hoveringPoint;                  // 是否悬停在某点上
+    bool is_adjustingPoint;                 // 是否正在调整点的位置
+    int minDistance = 20;
+    int adjustPointIndex;                   // 当前调整的点的索引
+    int hoverPointIndex;                    // 当前悬停的点的索引
+    detectionLabel *currentAdjustLabel;     // 当前调整的标签的指针
 };
 
 #endif // LABELPAINTER_H

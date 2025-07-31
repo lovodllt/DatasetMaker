@@ -14,7 +14,6 @@ detection::detection(QWidget *parent) :
     ui->widthEdit->setEnabled(false);
     ui->heightEdit->setEnabled(false);
     ui->binary->setEnabled(false);
-    ui->warp->setEnabled(false);
     ui->labelSelection->setEnabled(false);
 
     colorSelection = ui->colorSelection;
@@ -172,8 +171,6 @@ void detection::on_poseMode_toggled(bool checked)
 
     if (is_poseMode_)
     {
-        emit statusMessageUpdate("四点标注模式已启用");
-
         for (auto &label : detectionLabels_)
         {
             if (!label.armor_points.empty())
@@ -181,15 +178,17 @@ void detection::on_poseMode_toggled(bool checked)
                 label.is_pose = true;
             }
         }
+
+        emit statusMessageUpdate("四点标注模式已启用");
     }
     else
     {
-        emit statusMessageUpdate("四点标注模式已禁用");
-
         for (auto &label : detectionLabels_)
         {
             label.is_pose = false;
         }
+
+        emit statusMessageUpdate("四点标注模式已禁用");
     }
 
     updateLabelList();
@@ -294,12 +293,16 @@ void detection::on_labelList_itemClicked(QListWidgetItem *item)
     {
         label.is_selected = false;
     }
-
     detectionLabels_[index].is_selected = true;
+
     currentLabelClickedId = index;
     leftPartInstance->imageLabel->drawLabels();
     onDetectionLabelSelected(detectionLabels_[index]);
 
+    if (labelSave_ && !detectionLabels_[index].warp.empty())
+    {
+        displayPreview(detectionLabels_[index].warp);
+    }
     updateLabelList();
 }
 
@@ -324,7 +327,7 @@ void detection::onDetectionLabelSelected(detectionLabel &label)
         }
     }
 
-    if (labelSave_)
+    if (labelSave_ && !label.warp.empty())
     {
         ui->labelSelection->setCurrentText(QString::fromStdString(label.name));
         displayPreview(label.warp);
@@ -370,6 +373,10 @@ void detection::on_createLabel_clicked()
     label.is_pose = false;
 
     cv::Mat originalImg = leftPartInstance->imageLabel->getCurrentImage();
+    if (labelSave_)
+    {
+        label.warp = originalImg(label.rect);
+    }
     if (labelSave_ && is_warp_)
     {
         label.warp = originalImg(label.rect);
@@ -597,7 +604,6 @@ void detection::on_labelSave_toggled(bool checked)
     {
         emit statusMessageUpdate("标签保存模式已启用");
         ui->binary->setEnabled(true);
-        ui->warp->setEnabled(true);
         ui->widthEdit->setEnabled(true);
         ui->heightEdit->setEnabled(true);
         ui->saveWH->setEnabled(true);
@@ -620,12 +626,10 @@ void detection::on_labelSave_toggled(bool checked)
     {
         emit statusMessageUpdate("标签保存模式已禁用");
         ui->binary->setCheckable(false);
-        ui->warp->setCheckable(false);
         ui->widthEdit->setEnabled(false);
         ui->heightEdit->setEnabled(false);
         ui->saveWH->setEnabled(false);
         ui->binary->setEnabled(false);
-        ui->warp->setEnabled(false);
         ui->labelSelection->setEnabled(false);
 
         is_warp_ = false;
@@ -730,6 +734,11 @@ void detection::displayPreview(cv::Mat img)
     {
         ui->previewLabel->clear();
         emit statusMessageUpdate("预览图像为空");
+        return;
+    }
+
+    if (leftPartInstance->imageLabel->is_adjustingPoint)
+    {
         return;
     }
 

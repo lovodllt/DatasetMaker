@@ -98,6 +98,12 @@ void leftPart::saveFilePath()
     {
         updateImageCheckState();
     }
+    else
+    {
+        emit statusMessageUpdate("取消保存路径选择");
+        return;
+    }
+
     if (labelMode_ == "cls")
     {
         loadClsLabelOnImage(imageFiles[currentIndex].absoluteFilePath());
@@ -305,10 +311,11 @@ void leftPart::on_openDir_clicked()
 void leftPart::on_nextImage_clicked()
 {
     if (imageFiles.isEmpty()) return;
-    imageLabel->clearLabels();
 
     if (saveCurrentLabels())
     {
+        imageLabel->clearLabels();
+
         saveId_ = 0;
 
         int newIndex = currentIndex + 1;
@@ -323,10 +330,11 @@ void leftPart::on_nextImage_clicked()
 void leftPart::on_prevImage_clicked()
 {
     if (imageFiles.isEmpty()) return;
-    imageLabel->clearLabels();
 
     if (saveCurrentLabels())
     {
+        imageLabel->clearLabels();
+
         saveId_ = 0;
 
         int newIndex = (currentIndex - 1) % imageFiles.size();
@@ -610,7 +618,7 @@ void leftPart::displayImage(const QString &imagePath)
         qImg.bytesPerLine()
     );
 
-    cvtColor(tmpImage, tmpImage, cv::COLOR_RGB2BGR);
+    cvtColor(tmpImage, tmpImage, cv::COLOR_BGR2RGB);
     imageLabel->originalImg = tmpImage.clone();
 
     // 添加调试输出

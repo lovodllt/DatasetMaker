@@ -1,9 +1,16 @@
 #include "ImageLabel.h"
 #include "leftPart.h"
 #include "detection.h"
+#include "../../../../../usr/include/math.h"
 
 ImageLabel::ImageLabel(QWidget *parent) : QLabel(parent)
 {
+    is_drawing = false;
+    is_adjustingPoint = false;
+    adjustPointIndex = -1;
+    hoverPointIndex = -1;
+    currentAdjustLabel = nullptr;
+
     setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
 }
@@ -40,7 +47,7 @@ void ImageLabel::drawPose(cv::Mat &img)
     // 绘制确定点
     for (auto &posePoint : posePoints)
     {
-        circle(img, posePoint, 10, cv::Scalar(0, 255, 0), -1);
+        circle(img, posePoint, 3, cv::Scalar(0, 255, 0), -1);
     }
 
     // 绘制已确定线段
@@ -66,6 +73,9 @@ void ImageLabel::drawLabels()
 
     originalImg = img.clone();
 
+    double diagonal = sqrt(pow(img.cols, 2) + pow(img.rows, 2));
+    minDistance = static_cast<int>(diagonal * 0.01);
+
     if (labelMode_ == "cls" || labelMode_ == "detection")
     {
         // 绘制已有标签
@@ -86,6 +96,15 @@ void ImageLabel::drawLabels()
                     for (int i = 0; i < 4; i++)
                     {
                         line(img, label.armor_points[i], label.armor_points[(i + 1) % 4], color, thickness, cv::LINE_AA);
+                    }
+
+                    for (int i = 0; i < label.armor_points.size(); i++)
+                    {
+                        if (i == adjustPointIndex || i == hoverPointIndex)
+                        {
+                            circle(img, label.armor_points[i], minDistance, cv::Scalar(255, 255, 255), -1);
+                            circle(img, label.armor_points[i], minDistance, cv::Scalar(255, 0, 0), ceil(minDistance / 4));
+                        }
                     }
                 }
 
@@ -157,14 +176,22 @@ void ImageLabel::drawLabels()
     {
         leftPartInstance->clsInstance->displayPreview();
     }
-    else if (labelMode_ == "detection" && labelSave_ && !detectionLabels_.empty())
+    else if (labelMode_ == "detection" && labelSave_)
     {
-        for (auto label : detectionLabels_)
+        if (!tmpLabel.rect.empty())
         {
-            if (label.is_selected)
+            cv::Mat roi = img(tmpLabel.rect);
+            leftPartInstance->detectionInstance->displayPreview(roi);
+        }
+        else
+        {
+            for (auto label : detectionLabels_)
             {
-                leftPartInstance->detectionInstance->displayPreview(label.warp);
-                break;
+                if (label.is_selected)
+                {
+                    leftPartInstance->detectionInstance->displayPreview(label.warp);
+                    break;
+                }
             }
         }
     }
@@ -194,6 +221,30 @@ void ImageLabel::mousePressEvent(QMouseEvent *event)
     int originalX = static_cast<int>(viewportMousePos.x() / currentScale);
     int originalY = static_cast<int>(viewportMousePos.y() / currentScale);
     cv::Point clickPoint = cv::Point(originalX, originalY);
+
+    // 进入点调整模式
+    if (is_hoveringPoint)
+    {
+        if (is_poseMode_ && hoverPointIndex != -1)
+        {
+            for (auto &label : detectionLabels_)
+            {
+                if (label.is_selected)
+                {
+                    adjustPointIndex = hoverPointIndex;
+
+                    if (adjustPointIndex != -1)
+                    {
+                        is_adjustingPoint = true;
+                        currentAdjustLabel = &label;
+                        hoverPointIndex = -1;
+                        event->accept();
+                        return;
+                    }
+                }
+            }
+        }
+    }
 
     // 选中标签
     if (tmpLabel.rect.empty())
@@ -281,6 +332,47 @@ void ImageLabel::mouseMoveEvent(QMouseEvent *event)
     int originalY = static_cast<int>(viewportMousePos.y() / currentScale);
     currentPoint = cv::Point(originalX, originalY);
 
+    is_hoveringPoint = false;
+
+    if (!is_adjustingPoint && labelSelected &&!is_drawing)
+    {
+        for (auto &label : detectionLabels_)
+        {
+            if (label.is_selected && label.is_pose)
+            {
+                hoverPointIndex = getAdjustPointIndex(currentPoint, label);
+                if (hoverPointIndex != -1)
+                {
+                    is_hoveringPoint = true;
+                    break;
+                }
+            }
+        }
+        drawLabels();
+    }
+
+    if (is_adjustingPoint && currentAdjustLabel)
+    {
+        currentAdjustLabel->armor_points[adjustPointIndex] = currentPoint;
+
+        // 重新计算边界框
+        float xmin = FLT_MAX, xmax = FLT_MIN;
+        float ymin = FLT_MAX, ymax = FLT_MIN;
+        for (const auto &point : currentAdjustLabel->armor_points)
+        {
+            xmin = std::min(xmin, std::min(xmin, point.x));
+            xmax = std::max(xmax, std::max(xmax, point.x));
+            ymin = std::min(ymin, std::min(ymin, point.y));
+            ymax = std::max(ymax, std::max(ymax, point.y));
+        }
+        currentAdjustLabel->rect = cv::Rect(xmin, ymin, xmax - xmin, ymax - ymin);
+        currentAdjustLabel->center = getCenterFromPose(currentAdjustLabel->armor_points);
+
+        drawLabels();
+        event->accept();
+        return;
+    }
+
     if (is_drawing || !posePoints.empty())
     {
         drawLabels();
@@ -300,6 +392,45 @@ void ImageLabel::mouseReleaseEvent(QMouseEvent *event)
     int originalX = static_cast<int>(viewportMousePos.x() / currentScale);
     int originalY = static_cast<int>(viewportMousePos.y() / currentScale);
     cv::Point lastPoint = cv::Point(originalX, originalY);
+
+    if (is_adjustingPoint)
+    {
+        is_hoveringPoint = false;
+        is_adjustingPoint = false;
+        adjustPointIndex = -1;
+        hoverPointIndex = -1;
+
+        if (labelMode_ == "detection" && labelSave_ && is_warp_ && currentAdjustLabel)
+        {
+            cv::Mat img = getCurrentImage();
+
+            if (!img.empty() && currentAdjustLabel->armor_points.size() == 4)
+            {
+                cv::Mat warpImg = leftPartInstance->autoModeInstance->warp(img, currentAdjustLabel->armor_points);
+                if (!warpImg.empty())
+                {
+                    std::cout<<currentAdjustLabel->rect;
+                    currentAdjustLabel->warp = warpImg;
+                    if (is_binary_)
+                    {
+                        cvtColor(currentAdjustLabel->warp, currentAdjustLabel->warp, cv::COLOR_BGR2GRAY);
+                        threshold(currentAdjustLabel->warp, currentAdjustLabel->warp, 0, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
+                        cvtColor(currentAdjustLabel->warp, currentAdjustLabel->warp, cv::COLOR_GRAY2BGR);
+                    }
+                }
+                else
+                {
+                    currentAdjustLabel->warp = img(currentAdjustLabel->rect);
+                }
+            }
+        }
+
+        leftPartInstance->detectionInstance->updateLabelList();
+
+        emit statusMessageUpdate("标签修改完成");
+        event->accept();
+        return;
+    }
 
     if (event->button() == Qt::LeftButton && is_drawing && firstPoint != cv::Point(0, 0) && tmpLabel.rect.empty())
     {
@@ -389,4 +520,32 @@ void ImageLabel::clearLabels()
     {
         label.is_selected = false;
     }
+
+    is_poseMode_ = false;
+
+    is_hoveringPoint = false;
+    is_adjustingPoint = false;
+}
+
+// 获取调整点索引
+int ImageLabel::getAdjustPointIndex(const cv::Point& clickPoint, detectionLabel &label)
+{
+    if (!label.is_pose || label.armor_points.size() != 4)
+    {
+        return -1;
+    }
+
+    for (int i = 0; i < label.armor_points.size(); i++)
+    {
+        double dx = clickPoint.x - label.armor_points[i].x;
+        double dy = clickPoint.y - label.armor_points[i].y;
+        double distance = std::sqrt(dx * dx + dy * dy);
+
+        if (distance < minDistance * 1.2)
+        {
+            return i;
+        }
+    }
+
+    return -1;
 }

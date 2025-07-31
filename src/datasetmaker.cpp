@@ -82,6 +82,11 @@ void DatasetMaker::on_clsMode_triggered()
     {
         leftWidget()->imageLabel->tmpLabel = detectionLabel();
         leftWidget()->imageLabel->drawLabels();
+        leftWidget()->imageLabel->clearLabels();
+
+        is_warp_ = false;
+        is_binary_ = false;
+        is_poseMode_ = false;
     }
 
     ui->rightStack->setCurrentWidget(clsWidget());
@@ -99,6 +104,11 @@ void DatasetMaker::on_detectionMode_triggered()
     {
         leftWidget()->imageLabel->tmpLabel = detectionLabel();
         leftWidget()->imageLabel->drawLabels();
+        leftWidget()->imageLabel->clearLabels();
+
+        is_warp_ = false;
+        is_binary_ = false;
+        is_poseMode_ = false;
     }
 
     ui->rightStack->setCurrentWidget(detectionWidget());

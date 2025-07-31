@@ -293,15 +293,11 @@ void cls::displayPreview()
     cv::Mat originalImg = leftPartInstance->imageLabel->originalImg.clone();
 
     // 预览标签的lamba函数
-    auto showPreview = [this](const cv::Mat img)
+    auto showPreview = [this](cv::Mat img)
     {
         if (img.channels() == 1)
         {
             cvtColor(img, img, cv::COLOR_GRAY2RGB);
-        }
-        else if (img.channels() == 3)
-        {
-            cvtColor(img, img, cv::COLOR_BGR2RGB);
         }
 
         QImage qImg(img.data, img.cols, img.rows, img.step, QImage::Format_RGB888);
@@ -327,8 +323,8 @@ void cls::displayPreview()
         {
             if (label.is_selected)
             {
-                cv::Mat img;
                 showPreview(label.warp);
+                break;
             }
         }
     }
